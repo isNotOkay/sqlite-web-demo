@@ -52,18 +52,16 @@
     @if (loading()) {
       <app-loading-indicator></app-loading-indicator>
     }
+
     <div class="table-container mat-elevation-z8">
       <table mat-table [dataSource]="rows">
-        @for (col of columns; track col.key) {
-          <ng-container [matColumnDef]="col.key">
-            <th mat-header-cell *matHeaderCellDef sticky
-                [style.width.px]="col.widthPx"
-                [style.text-align]="col.align ?? 'start'">
-              {{ col.label }}
+        @for (col of columns; track col) {
+          <ng-container [matColumnDef]="col">
+            <th mat-header-cell *matHeaderCellDef sticky>
+              {{ col }}
             </th>
-            <td mat-cell *matCellDef="let row"
-                [style.text-align]="col.align ?? 'start'">
-              {{ row[col.key] }}
+            <td mat-cell *matCellDef="let row">
+              {{ row[col] }}
             </td>
           </ng-container>
         }
@@ -82,5 +80,4 @@
       (page)="onPage($event)">
     </mat-paginator>
   </section>
-
 </div>

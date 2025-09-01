@@ -1,41 +1,25 @@
-// src/app/services/data-api.service.ts
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import {delay, map, Observable} from 'rxjs';
-import { GridDataset, GridRow } from '../models/grid';
-
-export interface PagedResult<T> {
-  items: T[];
-  total: number;
-}
+import { GridRow, PagedResult } from '../models/grid';
 
 @Injectable({ providedIn: 'root' })
 export class DataApiService {
   private http = inject(HttpClient);
   private readonly baseUrl = 'http://localhost:3000';
 
-// src/app/services/data-api.service.ts
-  getDataset(id: string): Observable<GridDataset> {
-    // Ask json-server to filter datasets by id
-    const params = new HttpParams().set('id', id);
-    return this.http
-      .get<GridDataset[]>(`${this.baseUrl}/datasets`, { params })
-      .pipe(
-        delay(1000),
-        map(arr => {
-          const ds = arr[0];
-          if (!ds) throw new Error(`Dataset not found: ${id}`);
-          return ds;
-        })
-      );
-  }
-
-
-  /** json-server pagination: supports both array+X-Total-Count and envelope { data, items }. */
+  /**
+   * Load paginated rows from a top-level collection
+   * (/users, /orders, /products, /audit-logs).
+   *
+   * Supports both json-server shapes:
+   *  - array body + X-Total-Count header
+   *  - envelope { data: [...], items: N, ... }
+   */
   getRows(id: string, pageIndex: number, pageSize: number): Observable<PagedResult<GridRow>> {
     const params = new HttpParams()
-      .set('_page', String(pageIndex + 1))  // json-server is 1-based
-      .set('_per_page', String(pageSize));  // use per-page style
+      .set('_page', String(pageIndex + 1))   // json-server uses 1-based page
+      .set('_per_page', String(pageSize));
 
     return this.http
       .get<any>(`${this.baseUrl}/${id}`, { params, observe: 'response' })
@@ -44,7 +28,7 @@ export class DataApiService {
         map((res: HttpResponse<any>) => {
           const body = res.body;
 
-          // Newer json-server: envelope { data: GridRow[], items: number, ... }
+          // Envelope style: { data: [...], items: N, ... }
           if (body && Array.isArray(body.data)) {
             const items: GridRow[] = body.data;
             const total =
@@ -54,7 +38,7 @@ export class DataApiService {
             return { items, total };
           }
 
-          // Older json-server: body is the array, total comes from header
+          // Array + header style
           if (Array.isArray(body)) {
             return {
               items: body as GridRow[],
@@ -62,7 +46,7 @@ export class DataApiService {
             };
           }
 
-          // Fallback (unexpected shape)
+          // Fallback
           return { items: [], total: 0 };
         })
       );

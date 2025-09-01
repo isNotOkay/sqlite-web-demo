@@ -1,30 +1,23 @@
-import {Component, inject, OnInit, signal, ViewChild, WritableSignal} from '@angular/core';
+import { Component, OnInit, ViewChild, inject, signal, WritableSignal } from '@angular/core';
 
-import {MatTreeModule} from '@angular/material/tree';
-import {MatIconModule} from '@angular/material/icon';
-import {MatButtonModule} from '@angular/material/button';
+import { MatTreeModule } from '@angular/material/tree';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 
 import {
-  MatCell,
-  MatCellDef,
-  MatColumnDef,
-  MatHeaderCell,
-  MatHeaderCellDef,
-  MatHeaderRow,
-  MatHeaderRowDef,
-  MatRow,
-  MatRowDef,
-  MatTable
+  MatTable, MatHeaderCell, MatCell, MatColumnDef,
+  MatHeaderRow, MatRow, MatRowDef, MatHeaderRowDef,
+  MatHeaderCellDef, MatCellDef
 } from '@angular/material/table';
-import {MatPaginator, PageEvent} from '@angular/material/paginator';
+import { MatPaginator, PageEvent } from '@angular/material/paginator';
 
-import {DataApiService} from './services/data-api.service';
-import {GridColumn, GridDataset, GridRow} from './models/grid';
-import {LoadingIndicator} from './components/loading-indicator/loading-indicator';
-import {finalize} from 'rxjs';
+import { DataApiService } from './services/data-api.service';
+import { GridRow } from './models/grid';
+import { LoadingIndicator } from './components/loading-indicator/loading-indicator';
+import { finalize } from 'rxjs';
 
 interface NavNode {
-  id?: string; // set on leaves (e.g., "users", "orders")
+  id?: string;            // "users" | "orders" | "products" | "audit-logs"
   name: string;
   children?: NavNode[];
 }
@@ -39,7 +32,7 @@ interface NavNode {
     MatTable, MatHeaderCell, MatCell, MatColumnDef,
     MatHeaderRow, MatRow, MatRowDef, MatHeaderRowDef,
     MatHeaderCellDef, MatCellDef,
-    // Paginator
+    // Paginator + overlay
     MatPaginator, LoadingIndicator,
   ],
   templateUrl: './app.html',
@@ -48,22 +41,23 @@ interface NavNode {
 export class App implements OnInit {
   protected loading: WritableSignal<boolean> = signal(true);
 
+  // -------- TREE ----------
   treeData: NavNode[] = [
     {
       name: 'Tables',
       children: [
-        {id: 'users', name: 'Users'},
-        {id: 'orders', name: 'Orders'},
-        {id: 'products', name: 'Products'},
-        {id: 'audit-logs', name: 'Audit Logs'},
+        { id: 'users',       name: 'Users' },
+        { id: 'orders',      name: 'Orders' },
+        { id: 'products',    name: 'Products' },
+        { id: 'audit-logs',  name: 'Audit Logs' },
       ],
     },
     {
       name: 'Views',
       children: [
-        {id: 'active-users', name: 'Active Users'},
-        {id: 'sales-summary', name: 'Sales Summary'},
-        {id: 'inventory-status', name: 'Inventory Status'},
+        { id: 'active-users',      name: 'Active Users' },
+        { id: 'sales-summary',     name: 'Sales Summary' },
+        { id: 'inventory-status',  name: 'Inventory Status' },
       ],
     },
   ];
@@ -76,27 +70,30 @@ export class App implements OnInit {
   isSelectable = (node: NavNode) => !this.isTopLevel(node) && !!node.id;
   isSelected = (node: NavNode) => this.selectedNode === node;
 
-  // ---------- GRID (server-side paging) ----------
-  columns: GridColumn[] = [];
-  displayedColumns: string[] = [];
+  // -------- GRID (server-side paging; columns inferred from rows) ----------
+  columns: string[] = [];         // column keys inferred per page
+  displayedColumns: string[] = []; // material needs a second array
   rows: GridRow[] = [];
   total = 0;
 
   pageIndex = 0;
   pageSize = 50;
 
-  @ViewChild(MatPaginator, {static: true}) paginator!: MatPaginator;
+  @ViewChild(MatPaginator, { static: true }) paginator!: MatPaginator;
 
   private readonly api = inject(DataApiService);
 
   ngOnInit(): void {
-    this.selectAndLoad('users'); // load default dataset
+    // Default dataset
+    this.selectedNode = { id: 'users', name: 'Users' };
+    this.loadRows();
   }
 
   selectNode(node: NavNode) {
     if (!this.isSelectable(node)) return;
     this.selectedNode = node;
-    this.selectAndLoad(node.id!);
+    this.pageIndex = 0; // reset page when switching datasets
+    this.loadRows();
   }
 
   onPage(e: PageEvent) {
@@ -105,23 +102,29 @@ export class App implements OnInit {
     this.loadRows();
   }
 
-  private selectAndLoad(id: string) {
-    this.pageIndex = 0; // reset page when switching datasets
-    this.api.getDataset(id).subscribe((ds: GridDataset) => {
-      this.columns = ds.columns ?? [];
-      this.displayedColumns = this.columns.map((c) => c.key);
-      this.loadRows();
-    });
-  }
-
   private loadRows() {
     this.loading.set(true);
     const id = this.selectedNode?.id ?? 'users';
+
     this.api.getRows(id, this.pageIndex, this.pageSize)
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe(res => {
-        this.rows = res.items;
+        this.rows  = res.items;
         this.total = res.total;
+
+        // Infer columns from current page (first row order, then union).
+        const keys: string[] = [];
+        const seen = new Set<string>();
+        if (this.rows.length > 0) {
+          Object.keys(this.rows[0]!).forEach(k => { seen.add(k); keys.push(k); });
+          for (const r of this.rows) {
+            for (const k of Object.keys(r)) {
+              if (!seen.has(k)) { seen.add(k); keys.push(k); }
+            }
+          }
+        }
+        this.columns = keys;
+        this.displayedColumns = [...this.columns];
       });
   }
 }
