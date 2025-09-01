@@ -1,8 +1,8 @@
-import {Component, inject, OnInit, signal, ViewChild, WritableSignal} from '@angular/core';
+import { Component, inject, OnInit, signal, ViewChild, WritableSignal } from '@angular/core';
 
-import {MatTreeModule} from '@angular/material/tree';
-import {MatIconModule} from '@angular/material/icon';
-import {MatButtonModule} from '@angular/material/button';
+import { MatTreeModule } from '@angular/material/tree';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 
 import {
   MatCell,
@@ -16,17 +16,17 @@ import {
   MatRowDef,
   MatTable
 } from '@angular/material/table';
-import {MatPaginator, PageEvent} from '@angular/material/paginator';
+import { MatPaginator, PageEvent } from '@angular/material/paginator';
 
-import {DataApiService} from './services/data-api.service';
-import {GridRow} from './models/grid';
-import {LoadingIndicator} from './components/loading-indicator/loading-indicator';
+import { DataApiService } from './services/data-api.service';
+import { GridRow } from './models/grid';
+import { LoadingIndicator } from './components/loading-indicator/loading-indicator';
 
-import {of, Subject} from 'rxjs';
-import {catchError, distinctUntilChanged, switchMap, tap} from 'rxjs/operators';
+import { of, Subject } from 'rxjs';
+import { catchError, distinctUntilChanged, switchMap, tap } from 'rxjs/operators';
 
 interface NavNode {
-  id?: string;  // "users" | "orders" | "products" | "audit-logs"
+  id?: string;  // table name in SQLite, e.g. "Users" | "Orders"
   name: string;
   children?: NavNode[];
 }
@@ -53,24 +53,16 @@ export class App implements OnInit {
   protected loading: WritableSignal<boolean> = signal(true);
 
   // -------- TREE ----------
+  // Keep IDs exactly equal to the SQLite table names:
   treeData: NavNode[] = [
     {
       name: 'Tables',
       children: [
-        {id: 'users', name: 'Users'},
-        {id: 'orders', name: 'Orders'},
-        {id: 'products', name: 'Products'},
-        {id: 'audit-logs', name: 'Audit Logs'},
+        { id: 'Users',  name: 'Users'  },
+        { id: 'Orders', name: 'Orders' },
       ],
     },
-    {
-      name: 'Views',
-      children: [
-        {id: 'active-users', name: 'Active Users'},
-        {id: 'sales-summary', name: 'Sales Summary'},
-        {id: 'inventory-status', name: 'Inventory Status'},
-      ],
-    },
+    // You can add "Views" or more tables later when they exist in SQLite.
   ];
 
   childrenAccessor = (node: NavNode) => node.children ?? [];
@@ -90,7 +82,7 @@ export class App implements OnInit {
   pageIndex = 0;
   pageSize = 50;
 
-  @ViewChild(MatPaginator, {static: true}) paginator!: MatPaginator;
+  @ViewChild(MatPaginator, { static: true }) paginator!: MatPaginator;
 
   private readonly api = inject(DataApiService);
 
@@ -98,20 +90,20 @@ export class App implements OnInit {
   private readonly load$ = new Subject<LoadParams>();
 
   ngOnInit(): void {
-    // Wire the request pipeline with cancellation
+    // Wire the request pipeline with cancellation and simple error handling
     this.load$
       .pipe(
         distinctUntilChanged(
           (a, b) => a.id === b.id && a.pageIndex === b.pageIndex && a.pageSize === b.pageSize
         ),
         tap(() => this.loading.set(true)),
-        switchMap(({id, pageIndex, pageSize}) =>
+        switchMap(({ id, pageIndex, pageSize }) =>
           this.api.getRows(id, pageIndex, pageSize).pipe(
-            catchError(() => of({items: [], total: 0}))
+            catchError(() => of({ items: [], total: 0 }))
           )
         )
       )
-      .subscribe(({items, total}) => {
+      .subscribe(({ items, total }) => {
         this.rows = items;
         this.total = total;
 
@@ -138,14 +130,16 @@ export class App implements OnInit {
         this.loading.set(false);
       });
 
-    // Default dataset
-    this.selectedNode = {id: 'users', name: 'Users'};
+    // Default dataset on load
+    this.selectedNode = { id: 'Users', name: 'Users' };
     this.pushLoad();
   }
 
   // ---- UI handlers ----
   selectNode(node: NavNode) {
     if (!this.isSelectable(node)) return;
+    if (this.selectedNode === node) return;
+
     this.selectedNode = node;
     this.pageIndex = 0;
     this.pushLoad();
@@ -159,7 +153,7 @@ export class App implements OnInit {
 
   // Emit current params into the stream
   private pushLoad() {
-    const id = this.selectedNode?.id ?? 'users';
-    this.load$.next({id, pageIndex: this.pageIndex, pageSize: this.pageSize});
+    const id = this.selectedNode?.id ?? 'Users';
+    this.load$.next({ id, pageIndex: this.pageIndex, pageSize: this.pageSize });
   }
 }
