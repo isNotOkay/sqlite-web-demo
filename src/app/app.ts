@@ -1,15 +1,9 @@
 // file: src/app/app.ts
 import { Component, OnInit, AfterViewInit, ViewChild, inject } from '@angular/core';
 import {
-  MatCell, MatCellDef,
-  MatColumnDef,
-  MatHeaderCell, MatHeaderCellDef,
-  MatHeaderRow,
-  MatHeaderRowDef,
-  MatRow,
-  MatRowDef,
-  MatTable,
-  MatTableDataSource
+  MatTable, MatHeaderCell, MatCell, MatColumnDef,
+  MatHeaderRow, MatRow, MatRowDef, MatHeaderRowDef,
+  MatHeaderCellDef, MatCellDef, MatTableDataSource
 } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
 import { Data, PeriodicElement } from './services/data.service';
@@ -37,11 +31,20 @@ export class App implements OnInit, AfterViewInit {
   ngOnInit(): void {
     this.data.getElements().subscribe(rows => {
       this.dataSource.data = rows;
+
+      // If paginator is already available, wire it now and enforce 50 rows
+      if (this.paginator) {
+        this.dataSource.paginator = this.paginator;
+        this.paginator.pageSize = 50;
+        this.paginator.firstPage(); // ensures the slice is applied immediately
+      }
     });
   }
 
   ngAfterViewInit(): void {
+    // Wire paginator after view init (covers the case where data arrives later)
     this.dataSource.paginator = this.paginator;
-    this.paginator.pageSize = 50;   // 🔑 force 50 rows per page
+    this.paginator.pageSize = 50;
+    this.paginator.firstPage();
   }
 }
