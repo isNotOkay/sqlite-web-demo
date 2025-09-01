@@ -36,11 +36,12 @@ export class App implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     this.data.getElements().subscribe(rows => {
-      this.dataSource.data = rows;          // fill table from service
+      this.dataSource.data = rows;
     });
   }
 
   ngAfterViewInit(): void {
-    this.dataSource.paginator = this.paginator; // hook up the paginator
+    this.dataSource.paginator = this.paginator;
+    this.paginator.pageSize = 50;   // 🔑 force 50 rows per page
   }
 }
