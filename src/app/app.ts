@@ -11,9 +11,11 @@ import {
 } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
 
-import { Data, PeriodicElement } from './services/data.service';
+import { DataApiService } from './services/data-api.service';
+import { GridColumn, GridDataset, GridRow } from './models/grid';
 
 interface NavNode {
+  id?: string;         // set on leaves (e.g., "users", "orders")
   name: string;
   children?: NavNode[];
 }
@@ -38,48 +40,62 @@ export class App implements OnInit {
   treeData: NavNode[] = [
     {
       name: 'Tables',
-      children: [{ name: 'Users' }, { name: 'Orders' }, { name: 'Products' }, { name: 'Audit Logs' }],
+      children: [
+        { id: 'users',  name: 'Users' },
+        { id: 'orders', name: 'Orders' },
+        { id: 'products', name: 'Products' },     // add these to db.json when ready
+        { id: 'audit-logs', name: 'Audit Logs' }  // add later too
+      ],
     },
     {
       name: 'Views',
-      children: [{ name: 'Active Users' }, { name: 'Sales Summary' }, { name: 'Inventory Status' }],
+      children: [
+        { id: 'active-users',   name: 'Active Users' },   // add later
+        { id: 'sales-summary',  name: 'Sales Summary' },  // add later
+        { id: 'inventory-status', name: 'Inventory Status' } // add later
+      ],
     },
   ];
 
   childrenAccessor = (node: NavNode) => node.children ?? [];
   hasChild = (_: number, node: NavNode) => !!node.children && node.children.length > 0;
 
-  // single-selection (leaves only)
+  // selection (leaves only)
   selectedNode: NavNode | null = null;
   isTopLevel = (node: NavNode) => this.treeData.includes(node);
-  isSelectable = (node: NavNode) => !this.isTopLevel(node);
+  isSelectable = (node: NavNode) => !this.isTopLevel(node) && !!node.id;
   isSelected = (node: NavNode) => this.selectedNode === node;
-  selectNode(node: NavNode) {
-    if (!this.isSelectable(node)) return;
-    this.selectedNode = node;
-  }
 
-  // ---------- TABLE + PAGINATION ----------
+  // ---------- TABLE ----------
   readonly pageSize = 50;
-  displayedColumns: string[] = ['position', 'name', 'weight', 'symbol'];
-
-  // Non-nullable dataSource with an initial empty array -> avoids TS2532 in template
-  dataSource = new MatTableDataSource<PeriodicElement>([]);
-
-  // Make paginator available in ngOnInit
+  columns: GridColumn[] = [];
+  displayedColumns: string[] = [];                 // keys for Material header/row defs
+  dataSource = new MatTableDataSource<GridRow>([]);
   @ViewChild(MatPaginator, { static: true }) paginator!: MatPaginator;
 
-  private readonly data = inject(Data);
+  private readonly api = inject(DataApiService);
 
   ngOnInit(): void {
-    // Attach paginator once
+    // paginator
     this.dataSource.paginator = this.paginator;
     this.paginator.pageSize = this.pageSize;
 
-    // Load data
-    this.data.getElements().subscribe(rows => {
-      this.dataSource.data = rows;
-      this.paginator.firstPage(); // apply slice immediately
+    // load a default dataset (users) on first render
+    this.loadDataset('users');
+  }
+
+  selectNode(node: NavNode) {
+    if (!this.isSelectable(node)) return;
+    this.selectedNode = node;
+    this.loadDataset(node.id!);
+  }
+
+  private loadDataset(id: string) {
+    this.api.getDataset(id).subscribe((ds: GridDataset) => {
+      this.columns = ds.columns ?? [];
+      this.displayedColumns = this.columns.map(c => c.key);
+      this.dataSource.data = ds.rows ?? [];
+      this.paginator.firstPage();
     });
   }
 }

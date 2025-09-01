@@ -1,0 +1,33 @@
+{
+  "data": [
+    {
+      "id": "users",
+      "name": "Users",
+      "columns": [
+        { "key": "id", "label": "ID", "widthPx": 80, "align": "end", "sortable": true },
+        { "key": "name", "label": "Name", "sortable": true },
+        { "key": "email", "label": "Email" }
+      ],
+      "rows": [
+        { "id": 1, "name": "Alice Smith", "email": "alice@example.com" },
+        { "id": 2, "name": "Bob Jones",   "email": "bob@example.com"  },
+        { "id": 3, "name": "Cara Li",     "email": "cara@example.com" }
+      ]
+    },
+    {
+      "id": "orders",
+      "name": "Orders",
+      "columns": [
+        { "key": "orderId",   "label": "Order ID", "sortable": true },
+        { "key": "userId",    "label": "User ID",  "align": "end" },
+        { "key": "amount",    "label": "Amount",   "align": "end" },
+        { "key": "createdAt", "label": "Created At" }
+      ],
+      "rows": [
+        { "orderId": "A001", "userId": 1, "amount": 120.5, "createdAt": "2024-03-01T10:00:00Z" },
+        { "orderId": "A002", "userId": 2, "amount": 55.0,  "createdAt": "2024-03-04T15:30:00Z" },
+        { "orderId": "A003", "userId": 3, "amount": 9.99,  "createdAt": "2024-03-06T09:05:00Z" }
+      ]
+    }
+  ]
+}
