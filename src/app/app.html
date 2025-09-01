@@ -1,42 +1,92 @@
-<!-- file: src/app/app.html -->
-<div class="page">
-  <div class="table-container mat-elevation-z8">
-    <table mat-table [dataSource]="dataSource">
-      <!-- Position -->
-      <ng-container matColumnDef="position">
-        <th mat-header-cell *matHeaderCellDef sticky>No.</th>
-        <td mat-cell *matCellDef="let e">{{ e.position }}</td>
-      </ng-container>
+<div class="layout">
+  <!-- LEFT: Tree (only leaves selectable) -->
+  <aside class="sidenav">
+    <mat-tree #tree [dataSource]="treeData" [childrenAccessor]="childrenAccessor">
+      <!-- Leaf: selectable -->
+      <mat-tree-node
+        *matTreeNodeDef="let node"
+        matTreeNodePadding
+        class="tree-node selectable"
+        [class.selected]="isSelected(node)"
+        [attr.aria-selected]="isSelected(node)"
+        tabindex="0"
+        (click)="selectNode(node)"
+        (keydown.enter)="selectNode(node)"
+        (keydown.space)="selectNode(node)"
+      >
+        <!-- padding button -->
+        <button matIconButton disabled></button>
+        <span class="label">{{ node.name }}</span>
+      </mat-tree-node>
 
-      <!-- Name -->
-      <ng-container matColumnDef="name">
-        <th mat-header-cell *matHeaderCellDef sticky>Name</th>
-        <td mat-cell *matCellDef="let e">{{ e.name }}</td>
-      </ng-container>
+      <!-- Expandable: NOT selectable at top level -->
+      <mat-tree-node
+        *matTreeNodeDef="let node; when: hasChild"
+        matTreeNodePadding
+        matTreeNodeToggle
+        class="tree-node"
+        [class.selectable]="isSelectable(node)"
+        [class.selected]="isSelectable(node) && isSelected(node)"
+        [cdkTreeNodeTypeaheadLabel]="node.name"
+        [attr.aria-selected]="isSelectable(node) ? isSelected(node) : null"
+        [attr.tabindex]="isSelectable(node) ? 0 : -1"
+        (click)="selectNode(node)"
+        (keydown.enter)="selectNode(node)"
+        (keydown.space)="selectNode(node)"
+      >
+        <!-- chevron: toggle only (don’t select) -->
+        <button
+          matIconButton
+          matTreeNodeToggle
+          (click)="$event.stopPropagation()"
+          [attr.aria-label]="'Toggle ' + node.name">
+          <mat-icon class="mat-icon-rtl-mirror">
+            {{ tree.isExpanded(node) ? 'expand_more' : 'chevron_right' }}
+          </mat-icon>
+        </button>
+        <span class="label">{{ node.name }}</span>
+      </mat-tree-node>
+    </mat-tree>
+  </aside>
 
-      <!-- Weight -->
-      <ng-container matColumnDef="weight">
-        <th mat-header-cell *matHeaderCellDef sticky>Weight</th>
-        <td mat-cell *matCellDef="let e">{{ e.weight }}</td>
-      </ng-container>
+  <!-- RIGHT: Table + paginator -->
+  <section class="content">
+    <div class="table-container mat-elevation-z8">
+      <table mat-table [dataSource]="dataSource">
+        <!-- Position -->
+        <ng-container matColumnDef="position">
+          <th mat-header-cell *matHeaderCellDef sticky>No.</th>
+          <td mat-cell *matCellDef="let e">{{ e.position }}</td>
+        </ng-container>
 
-      <!-- Symbol -->
-      <ng-container matColumnDef="symbol">
-        <th mat-header-cell *matHeaderCellDef sticky>Symbol</th>
-        <td mat-cell *matCellDef="let e">{{ e.symbol }}</td>
-      </ng-container>
+        <!-- Name -->
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef sticky>Name</th>
+          <td mat-cell *matCellDef="let e">{{ e.name }}</td>
+        </ng-container>
 
-      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-    </table>
-  </div>
+        <!-- Weight -->
+        <ng-container matColumnDef="weight">
+          <th mat-header-cell *matHeaderCellDef sticky>Weight</th>
+          <td mat-cell *matCellDef="let e">{{ e.weight }}</td>
+        </ng-container>
 
-  <!-- Footer: always at bottom of the viewport -->
-  <mat-paginator
-    [length]="dataSource.data.length"
-    [pageSize]="50"
-    [hidePageSize]="true"
-    showFirstLastButtons
-    class="footer-paginator">
-  </mat-paginator>
+        <!-- Symbol -->
+        <ng-container matColumnDef="symbol">
+          <th mat-header-cell *matHeaderCellDef sticky>Symbol</th>
+          <td mat-cell *matCellDef="let e">{{ e.symbol }}</td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+    </div>
+
+    <mat-paginator
+      [length]="dataSource.data.length"
+      [pageSize]="50"
+      showFirstLastButtons
+      class="footer-paginator">
+    </mat-paginator>
+  </section>
 </div>

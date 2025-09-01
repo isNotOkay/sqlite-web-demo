@@ -1,38 +1,51 @@
-/* file: src/app/app.scss */
+:host { display: block; height: 100dvh; }
 
-/* Make the host fill the viewport (works inside Angular shells too) */
-:host {
-  display: block;
-  min-height: 100dvh; /* dynamic vh handles mobile browser UI */
+.layout {
+  display: flex;
+  height: 100%;
 }
 
-/* Flex page: header/table scrolls, paginator stays at the bottom */
-.page {
+.sidenav {
+  width: 260px;
+  border-right: 1px solid rgba(0,0,0,.12);
+  overflow: auto;
+  padding: 8px 0;
+}
+
+/* Make selection visuals win over MDC row styles */
+.sidenav .mat-tree-node.selectable { cursor: pointer; }
+
+/* stronger specificity so it always applies */
+.sidenav .mat-tree-node.selectable.selected {
+  background: rgba(0,0,0,.06);
+  border-left: 3px solid currentColor;
+}
+
+/* optional: label spacing */
+.sidenav .mat-tree-node .label {
+  margin-inline-start: 8px;
+}
+
+.content {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 100%;
-  height: 100%;      /* ensures fill even in nested layouts */
-  min-block-size: 100dvh;
+  min-width: 0;
 }
 
-/* Scroll only the table area */
+/* Only the table area scrolls */
 .table-container {
   flex: 1 1 auto;
-  min-height: 0;     /* CRITICAL so flex item can shrink and allow scrolling */
+  min-height: 0;
   overflow: auto;
-  border-radius: 8px;
 }
 
-/* Keep header visible while the rows scroll */
-th[mat-header-cell] { position: sticky; top: 0; z-index: 1; }
-
-/* Paginator footer: always visible at viewport bottom, with safe-area padding */
+/* Paginator sticks to bottom */
 .footer-paginator {
-  margin-top: auto;                 /* pushes it to the bottom in the flex column */
-  position: sticky;                 /* keeps it visible even if page itself scrolls */
+  margin-top: auto;
+  position: sticky;
   bottom: 0;
-  padding-bottom: env(safe-area-inset-bottom); /* iOS notch / gestures */
   background: var(--mat-surface, #fff);
-  z-index: 2;                       /* above table content */
-  border-top: 1px solid rgba(0,0,0,0.06);
+  border-top: 1px solid rgba(0,0,0,.12);
+  z-index: 2;
 }
