@@ -1,5 +1,5 @@
 // file: src/app/app.ts
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild, inject } from '@angular/core';
 import {
   MatCell, MatCellDef,
   MatColumnDef,
@@ -8,26 +8,39 @@ import {
   MatHeaderRowDef,
   MatRow,
   MatRowDef,
-  MatTable
+  MatTable,
+  MatTableDataSource
 } from '@angular/material/table';
+import { MatPaginator } from '@angular/material/paginator';
 import { Data, PeriodicElement } from './services/data.service';
 
 @Component({
   selector: 'app-root',
-  imports: [MatTable, MatHeaderCell, MatCell, MatColumnDef, MatHeaderRow, MatRow, MatRowDef, MatHeaderRowDef, MatHeaderCellDef, MatCellDef],
+  standalone: true,
+  imports: [
+    MatTable, MatHeaderCell, MatCell, MatColumnDef,
+    MatHeaderRow, MatRow, MatRowDef, MatHeaderRowDef,
+    MatHeaderCellDef, MatCellDef,
+    MatPaginator
+  ],
   templateUrl: './app.html',
-  styleUrl: './app.scss',
-  standalone: true
+  styleUrl: './app.scss'
 })
-export class App implements OnInit {
+export class App implements OnInit, AfterViewInit {
   private readonly data = inject(Data);
 
   displayedColumns: string[] = ['position', 'name', 'weight', 'symbol'];
-  dataSource: PeriodicElement[] = [];
+  dataSource = new MatTableDataSource<PeriodicElement>([]);
+
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
 
   ngOnInit(): void {
     this.data.getElements().subscribe(rows => {
-      this.dataSource = rows;
+      this.dataSource.data = rows;          // fill table from service
     });
+  }
+
+  ngAfterViewInit(): void {
+    this.dataSource.paginator = this.paginator; // hook up the paginator
   }
 }
