@@ -50,40 +50,34 @@
   <!-- RIGHT: Dynamic grid + paginator -->
   <section class="content">
     <div class="table-container mat-elevation-z8">
-      <table mat-table [dataSource]="dataSource">
-        <!-- Generate all columns dynamically -->
+      <table mat-table [dataSource]="rows">
         @for (col of columns; track col.key) {
           <ng-container [matColumnDef]="col.key">
-            <th
-              mat-header-cell
-              *matHeaderCellDef
-              sticky
-              [style.width.px]="col.widthPx"
-              [style.text-align]="col.align ?? 'start'">
+            <th mat-header-cell *matHeaderCellDef sticky
+                [style.width.px]="col.widthPx"
+                [style.text-align]="col.align ?? 'start'">
               {{ col.label }}
             </th>
-
-            <td
-              mat-cell
-              *matCellDef="let row"
-              [style.text-align]="col.align ?? 'start'">
+            <td mat-cell *matCellDef="let row"
+                [style.text-align]="col.align ?? 'start'">
               {{ row[col.key] }}
             </td>
           </ng-container>
         }
-
-
         <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
         <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
       </table>
     </div>
 
     <mat-paginator
-      [length]="dataSource.data.length"
+      [length]="total"
+      [pageIndex]="pageIndex"
       [pageSize]="pageSize"
-      [hidePageSize]="true"
+      [pageSizeOptions]="[10, 25, 50, 100]"
       showFirstLastButtons
-      class="footer-paginator">
+      class="footer-paginator"
+      (page)="onPage($event)">
     </mat-paginator>
   </section>
+
 </div>
