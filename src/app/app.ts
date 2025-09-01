@@ -20,6 +20,7 @@ import {MatPaginator, PageEvent} from '@angular/material/paginator';
 
 import {DataApiService} from './services/data-api.service';
 import {GridColumn, GridDataset, GridRow} from './models/grid';
+import {LoadingIndicator} from './components/loading-indicator/loading-indicator';
 
 interface NavNode {
   id?: string; // set on leaves (e.g., "users", "orders")
@@ -38,7 +39,7 @@ interface NavNode {
     MatHeaderRow, MatRow, MatRowDef, MatHeaderRowDef,
     MatHeaderCellDef, MatCellDef,
     // Paginator
-    MatPaginator,
+    MatPaginator, LoadingIndicator,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',

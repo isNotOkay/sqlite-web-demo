@@ -48,7 +48,8 @@
   </aside>
 
   <!-- RIGHT: Dynamic grid + paginator -->
-  <section class="content">
+  <section class="content" style="position: relative;">
+    <app-loading-indicator></app-loading-indicator>
     <div class="table-container mat-elevation-z8">
       <table mat-table [dataSource]="rows">
         @for (col of columns; track col.key) {
