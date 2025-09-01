@@ -48,6 +48,6 @@ body {
 // Customize the entire app. Change :root to your selector if you want to scope the styles.
 :root {
   @include mat.table-overrides((
-    row-item-container-height: 25px,
+    row-item-container-height: 30px,
   ));
 }
