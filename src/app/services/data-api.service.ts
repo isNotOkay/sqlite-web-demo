@@ -9,16 +9,14 @@ export class DataApiService {
   private readonly baseUrl = 'http://localhost:3000';
 
   /**
-   * Load paginated rows from a top-level collection
-   * (/users, /orders, /products, /audit-logs).
-   *
+   * Load paginated rows from a top-level collection (/users, /orders, /products, /audit-logs).
    * Supports both json-server shapes:
    *  - array body + X-Total-Count header
    *  - envelope { data: [...], items: N, ... }
    */
   getRows(id: string, pageIndex: number, pageSize: number): Observable<PagedResult<GridRow>> {
     const params = new HttpParams()
-      .set('_page', String(pageIndex + 1))   // json-server uses 1-based page
+      .set('_page', String(pageIndex + 1))   // json-server is 1-based
       .set('_per_page', String(pageSize));
 
     return this.http
@@ -28,7 +26,7 @@ export class DataApiService {
         map((res: HttpResponse<any>) => {
           const body = res.body;
 
-          // Envelope style: { data: [...], items: N, ... }
+          // Envelope style
           if (body && Array.isArray(body.data)) {
             const items: GridRow[] = body.data;
             const total =
@@ -46,7 +44,6 @@ export class DataApiService {
             };
           }
 
-          // Fallback
           return { items: [], total: 0 };
         })
       );

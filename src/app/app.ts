@@ -1,26 +1,37 @@
-import { Component, OnInit, ViewChild, inject, signal, WritableSignal } from '@angular/core';
+import {Component, inject, OnInit, signal, ViewChild, WritableSignal} from '@angular/core';
 
-import { MatTreeModule } from '@angular/material/tree';
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
+import {MatTreeModule} from '@angular/material/tree';
+import {MatIconModule} from '@angular/material/icon';
+import {MatButtonModule} from '@angular/material/button';
 
 import {
-  MatTable, MatHeaderCell, MatCell, MatColumnDef,
-  MatHeaderRow, MatRow, MatRowDef, MatHeaderRowDef,
-  MatHeaderCellDef, MatCellDef
+  MatCell,
+  MatCellDef,
+  MatColumnDef,
+  MatHeaderCell,
+  MatHeaderCellDef,
+  MatHeaderRow,
+  MatHeaderRowDef,
+  MatRow,
+  MatRowDef,
+  MatTable
 } from '@angular/material/table';
-import { MatPaginator, PageEvent } from '@angular/material/paginator';
+import {MatPaginator, PageEvent} from '@angular/material/paginator';
 
-import { DataApiService } from './services/data-api.service';
-import { GridRow } from './models/grid';
-import { LoadingIndicator } from './components/loading-indicator/loading-indicator';
-import { finalize } from 'rxjs';
+import {DataApiService} from './services/data-api.service';
+import {GridRow} from './models/grid';
+import {LoadingIndicator} from './components/loading-indicator/loading-indicator';
+
+import {of, Subject} from 'rxjs';
+import {catchError, distinctUntilChanged, switchMap, tap} from 'rxjs/operators';
 
 interface NavNode {
-  id?: string;            // "users" | "orders" | "products" | "audit-logs"
+  id?: string;  // "users" | "orders" | "products" | "audit-logs"
   name: string;
   children?: NavNode[];
 }
+
+type LoadParams = { id: string; pageIndex: number; pageSize: number };
 
 @Component({
   selector: 'app-root',
@@ -46,18 +57,18 @@ export class App implements OnInit {
     {
       name: 'Tables',
       children: [
-        { id: 'users',       name: 'Users' },
-        { id: 'orders',      name: 'Orders' },
-        { id: 'products',    name: 'Products' },
-        { id: 'audit-logs',  name: 'Audit Logs' },
+        {id: 'users', name: 'Users'},
+        {id: 'orders', name: 'Orders'},
+        {id: 'products', name: 'Products'},
+        {id: 'audit-logs', name: 'Audit Logs'},
       ],
     },
     {
       name: 'Views',
       children: [
-        { id: 'active-users',      name: 'Active Users' },
-        { id: 'sales-summary',     name: 'Sales Summary' },
-        { id: 'inventory-status',  name: 'Inventory Status' },
+        {id: 'active-users', name: 'Active Users'},
+        {id: 'sales-summary', name: 'Sales Summary'},
+        {id: 'inventory-status', name: 'Inventory Status'},
       ],
     },
   ];
@@ -70,61 +81,85 @@ export class App implements OnInit {
   isSelectable = (node: NavNode) => !this.isTopLevel(node) && !!node.id;
   isSelected = (node: NavNode) => this.selectedNode === node;
 
-  // -------- GRID (server-side paging; columns inferred from rows) ----------
-  columns: string[] = [];         // column keys inferred per page
-  displayedColumns: string[] = []; // material needs a second array
+  // -------- GRID ----------
+  columns: string[] = [];
+  displayedColumns: string[] = [];
   rows: GridRow[] = [];
   total = 0;
 
   pageIndex = 0;
   pageSize = 50;
 
-  @ViewChild(MatPaginator, { static: true }) paginator!: MatPaginator;
+  @ViewChild(MatPaginator, {static: true}) paginator!: MatPaginator;
 
   private readonly api = inject(DataApiService);
 
+  // Stream that drives requests; switchMap on this cancels previous in-flight call
+  private readonly load$ = new Subject<LoadParams>();
+
   ngOnInit(): void {
-    // Default dataset
-    this.selectedNode = { id: 'users', name: 'Users' };
-    this.loadRows();
-  }
+    // Wire the request pipeline with cancellation
+    this.load$
+      .pipe(
+        distinctUntilChanged(
+          (a, b) => a.id === b.id && a.pageIndex === b.pageIndex && a.pageSize === b.pageSize
+        ),
+        tap(() => this.loading.set(true)),
+        switchMap(({id, pageIndex, pageSize}) =>
+          this.api.getRows(id, pageIndex, pageSize).pipe(
+            catchError(() => of({items: [], total: 0}))
+          )
+        )
+      )
+      .subscribe(({items, total}) => {
+        this.rows = items;
+        this.total = total;
 
-  selectNode(node: NavNode) {
-    if (!this.isSelectable(node)) return;
-    this.selectedNode = node;
-    this.pageIndex = 0; // reset page when switching datasets
-    this.loadRows();
-  }
-
-  onPage(e: PageEvent) {
-    this.pageIndex = e.pageIndex;
-    this.pageSize = e.pageSize;
-    this.loadRows();
-  }
-
-  private loadRows() {
-    this.loading.set(true);
-    const id = this.selectedNode?.id ?? 'users';
-
-    this.api.getRows(id, this.pageIndex, this.pageSize)
-      .pipe(finalize(() => this.loading.set(false)))
-      .subscribe(res => {
-        this.rows  = res.items;
-        this.total = res.total;
-
-        // Infer columns from current page (first row order, then union).
+        // Infer columns from current page
         const keys: string[] = [];
         const seen = new Set<string>();
         if (this.rows.length > 0) {
-          Object.keys(this.rows[0]!).forEach(k => { seen.add(k); keys.push(k); });
+          Object.keys(this.rows[0]!).forEach(k => {
+            seen.add(k);
+            keys.push(k);
+          });
           for (const r of this.rows) {
             for (const k of Object.keys(r)) {
-              if (!seen.has(k)) { seen.add(k); keys.push(k); }
+              if (!seen.has(k)) {
+                seen.add(k);
+                keys.push(k);
+              }
             }
           }
         }
         this.columns = keys;
         this.displayedColumns = [...this.columns];
+
+        this.loading.set(false);
       });
+
+    // Default dataset
+    this.selectedNode = {id: 'users', name: 'Users'};
+    this.pushLoad();
+  }
+
+  // ---- UI handlers ----
+  selectNode(node: NavNode) {
+    if (!this.isSelectable(node)) return;
+    this.selectedNode = node;
+    this.pageIndex = 0;
+    this.pushLoad();
+  }
+
+  onPage(e: PageEvent) {
+    this.pageIndex = e.pageIndex;
+    this.pageSize = e.pageSize;
+    this.pushLoad();
+  }
+
+  // Emit current params into the stream
+  private pushLoad() {
+    const id = this.selectedNode?.id ?? 'users';
+    this.load$.next({id, pageIndex: this.pageIndex, pageSize: this.pageSize});
   }
 }
