@@ -1,7 +1,7 @@
 // src/app/services/data-api.service.ts
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
-import { map, Observable } from 'rxjs';
+import {delay, map, Observable} from 'rxjs';
 import { GridDataset, GridRow } from '../models/grid';
 
 export interface PagedResult<T> {
@@ -21,6 +21,7 @@ export class DataApiService {
     return this.http
       .get<GridDataset[]>(`${this.baseUrl}/datasets`, { params })
       .pipe(
+        delay(1000),
         map(arr => {
           const ds = arr[0];
           if (!ds) throw new Error(`Dataset not found: ${id}`);
@@ -39,6 +40,7 @@ export class DataApiService {
     return this.http
       .get<any>(`${this.baseUrl}/${id}`, { params, observe: 'response' })
       .pipe(
+        delay(500),
         map((res: HttpResponse<any>) => {
           const body = res.body;
 

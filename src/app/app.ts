@@ -1,4 +1,4 @@
-import {Component, inject, OnInit, ViewChild} from '@angular/core';
+import {Component, inject, OnInit, signal, ViewChild, WritableSignal} from '@angular/core';
 
 import {MatTreeModule} from '@angular/material/tree';
 import {MatIconModule} from '@angular/material/icon';
@@ -21,6 +21,7 @@ import {MatPaginator, PageEvent} from '@angular/material/paginator';
 import {DataApiService} from './services/data-api.service';
 import {GridColumn, GridDataset, GridRow} from './models/grid';
 import {LoadingIndicator} from './components/loading-indicator/loading-indicator';
+import {finalize} from 'rxjs';
 
 interface NavNode {
   id?: string; // set on leaves (e.g., "users", "orders")
@@ -45,7 +46,8 @@ interface NavNode {
   styleUrl: './app.scss',
 })
 export class App implements OnInit {
-  // ---------- TREE ----------
+  protected loading: WritableSignal<boolean> = signal(true);
+
   treeData: NavNode[] = [
     {
       name: 'Tables',
@@ -113,10 +115,13 @@ export class App implements OnInit {
   }
 
   private loadRows() {
+    this.loading.set(true);
     const id = this.selectedNode?.id ?? 'users';
-    this.api.getRows(id, this.pageIndex, this.pageSize).subscribe(res => {
-      this.rows = res.items;
-      this.total = res.total;
-    });
+    this.api.getRows(id, this.pageIndex, this.pageSize)
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe(res => {
+        this.rows = res.items;
+        this.total = res.total;
+      });
   }
 }
