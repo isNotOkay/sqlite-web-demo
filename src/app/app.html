@@ -2,19 +2,18 @@
   <!-- LEFT: Tree (only leaves selectable) -->
   <aside class="sidenav">
     <mat-tree #tree [dataSource]="treeData" [childrenAccessor]="childrenAccessor">
+
       <!-- Leaf: selectable -->
       <mat-tree-node
         *matTreeNodeDef="let node"
         matTreeNodePadding
-        class="tree-node selectable"
+        class="mat-tree-node tree-node selectable"
         [class.selected]="isSelected(node)"
         [attr.aria-selected]="isSelected(node)"
         tabindex="0"
         (click)="selectNode(node)"
         (keydown.enter)="selectNode(node)"
-        (keydown.space)="selectNode(node)"
-      >
-        <!-- padding button -->
+        (keydown.space)="selectNode(node)">
         <button matIconButton disabled></button>
         <span class="label">{{ node.name }}</span>
       </mat-tree-node>
@@ -24,7 +23,7 @@
         *matTreeNodeDef="let node; when: hasChild"
         matTreeNodePadding
         matTreeNodeToggle
-        class="tree-node"
+        class="mat-tree-node tree-node"
         [class.selectable]="isSelectable(node)"
         [class.selected]="isSelectable(node) && isSelected(node)"
         [cdkTreeNodeTypeaheadLabel]="node.name"
@@ -32,9 +31,7 @@
         [attr.tabindex]="isSelectable(node) ? 0 : -1"
         (click)="selectNode(node)"
         (keydown.enter)="selectNode(node)"
-        (keydown.space)="selectNode(node)"
-      >
-        <!-- chevron: toggle only (don’t select) -->
+        (keydown.space)="selectNode(node)">
         <button
           matIconButton
           matTreeNodeToggle
@@ -46,6 +43,7 @@
         </button>
         <span class="label">{{ node.name }}</span>
       </mat-tree-node>
+
     </mat-tree>
   </aside>
 
@@ -53,25 +51,21 @@
   <section class="content">
     <div class="table-container mat-elevation-z8">
       <table mat-table [dataSource]="dataSource">
-        <!-- Position -->
         <ng-container matColumnDef="position">
           <th mat-header-cell *matHeaderCellDef sticky>No.</th>
           <td mat-cell *matCellDef="let e">{{ e.position }}</td>
         </ng-container>
 
-        <!-- Name -->
         <ng-container matColumnDef="name">
           <th mat-header-cell *matHeaderCellDef sticky>Name</th>
           <td mat-cell *matCellDef="let e">{{ e.name }}</td>
         </ng-container>
 
-        <!-- Weight -->
         <ng-container matColumnDef="weight">
           <th mat-header-cell *matHeaderCellDef sticky>Weight</th>
           <td mat-cell *matCellDef="let e">{{ e.weight }}</td>
         </ng-container>
 
-        <!-- Symbol -->
         <ng-container matColumnDef="symbol">
           <th mat-header-cell *matHeaderCellDef sticky>Symbol</th>
           <td mat-cell *matCellDef="let e">{{ e.symbol }}</td>
@@ -82,9 +76,10 @@
       </table>
     </div>
 
+    <!-- dataSource is non-null; data is always an array -->
     <mat-paginator
       [length]="dataSource.data.length"
-      [pageSize]="50"
+      [pageSize]="pageSize"
       showFirstLastButtons
       class="footer-paginator">
     </mat-paginator>

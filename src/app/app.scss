@@ -9,19 +9,17 @@
   padding: 8px 0;
 }
 
-/* Reserve the left border space even when not selected */
-.sidenav .mat-tree-node.selectable {
+/* Reserve left-border space to prevent label "jump" */
+.sidenav .mat-tree-node.tree-node.selectable {
   cursor: pointer;
-  border-left: 3px solid transparent; /* prevents label shift */
+  border-left: 3px solid transparent;
 }
 
-/* Selected state just changes the border color */
-.sidenav .mat-tree-node.selectable.selected {
+.sidenav .mat-tree-node.tree-node.selectable.selected {
   background: rgba(0,0,0,.06);
-  border-left-color: currentColor;     /* no layout change */
+  border-left-color: currentColor;
 }
 
-/* optional: label spacing */
 .sidenav .mat-tree-node .label { margin-inline-start: 8px; }
 
 .content {
@@ -32,7 +30,11 @@
 }
 
 /* Only the table area scrolls */
-.table-container { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.table-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
 
 /* Paginator sticks to bottom */
 .footer-paginator {

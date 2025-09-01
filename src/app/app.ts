@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, ViewChild, inject } from '@angular/core';
+import { Component, OnInit, ViewChild, inject } from '@angular/core';
 
 import { MatTreeModule } from '@angular/material/tree';
 import { MatIconModule } from '@angular/material/icon';
@@ -33,25 +33,16 @@ interface NavNode {
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
-export class App implements OnInit, AfterViewInit {
+export class App implements OnInit {
   // ---------- TREE ----------
   treeData: NavNode[] = [
     {
       name: 'Tables',
-      children: [
-        { name: 'Users' },
-        { name: 'Orders' },
-        { name: 'Products' },
-        { name: 'Audit Logs' },
-      ],
+      children: [{ name: 'Users' }, { name: 'Orders' }, { name: 'Products' }, { name: 'Audit Logs' }],
     },
     {
       name: 'Views',
-      children: [
-        { name: 'Active Users' },
-        { name: 'Sales Summary' },
-        { name: 'Inventory Status' },
-      ],
+      children: [{ name: 'Active Users' }, { name: 'Sales Summary' }, { name: 'Inventory Status' }],
     },
   ];
 
@@ -60,42 +51,35 @@ export class App implements OnInit, AfterViewInit {
 
   // single-selection (leaves only)
   selectedNode: NavNode | null = null;
-
-  /** A node is top-level if it is a direct item of the root array. */
   isTopLevel = (node: NavNode) => this.treeData.includes(node);
-
-  /** Only non top-level nodes (i.e., leaves in our data) are selectable. */
   isSelectable = (node: NavNode) => !this.isTopLevel(node);
-
-  /** Selected predicate used for class binding. */
   isSelected = (node: NavNode) => this.selectedNode === node;
-
   selectNode(node: NavNode) {
-    if (!this.isSelectable(node)) return; // ignore clicks on Tables/Views
+    if (!this.isSelectable(node)) return;
     this.selectedNode = node;
   }
 
-  // ---------- TABLE ----------
+  // ---------- TABLE + PAGINATION ----------
+  readonly pageSize = 50;
   displayedColumns: string[] = ['position', 'name', 'weight', 'symbol'];
+
+  // Non-nullable dataSource with an initial empty array -> avoids TS2532 in template
   dataSource = new MatTableDataSource<PeriodicElement>([]);
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+
+  // Make paginator available in ngOnInit
+  @ViewChild(MatPaginator, { static: true }) paginator!: MatPaginator;
 
   private readonly data = inject(Data);
 
   ngOnInit(): void {
+    // Attach paginator once
+    this.dataSource.paginator = this.paginator;
+    this.paginator.pageSize = this.pageSize;
+
+    // Load data
     this.data.getElements().subscribe(rows => {
       this.dataSource.data = rows;
-      if (this.paginator) {
-        this.dataSource.paginator = this.paginator;
-        this.paginator.pageSize = 50;   // fixed page size
-        this.paginator.firstPage();
-      }
+      this.paginator.firstPage(); // apply slice immediately
     });
-  }
-
-  ngAfterViewInit(): void {
-    this.dataSource.paginator = this.paginator;
-    this.paginator.pageSize = 50;
-    this.paginator.firstPage();
   }
 }
