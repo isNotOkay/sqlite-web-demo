@@ -51,7 +51,7 @@ body {
     header-headline-color: white,
     row-item-outline-color: var(--mat-sys-outline-variant),
     header-container-height: 40px,
-    row-item-container-height: 40px,
+    row-item-container-height: 35px,
   ));
   @include mat.toolbar-overrides((
     standard-height: 50px,
