@@ -46,11 +46,19 @@
 
   <!-- RIGHT: Dynamic grid + paginator -->
   <section class="content" style="position: relative;">
+    <!-- TABLE TOOLBAR: local to the content pane -->
+    <mat-toolbar class="table-toolbar">
+
+      <span class="title">
+        {{ selectedNode?.name || 'Select an item' }}
+      </span>
+    </mat-toolbar>
+
     @if (loading()) {
       <app-loading-indicator/>
     }
 
-    <div class="table-container mat-elevation-z8">
+    <div class="table-container">
       <table mat-table [dataSource]="rows">
         @for (col of columns; track col) {
           <ng-container [matColumnDef]="col">

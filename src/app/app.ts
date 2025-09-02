@@ -16,6 +16,7 @@ import { GridRow } from './models/grid';
 import { of, Subject, forkJoin } from 'rxjs';
 import { catchError, distinctUntilChanged, switchMap, tap } from 'rxjs/operators';
 import {LoadingIndicator} from './components/loading-indicator/loading-indicator';
+import {MatToolbar} from '@angular/material/toolbar';
 
 interface NavNode {
   id?: string;                    // database object name
@@ -38,7 +39,7 @@ type LoadParams = { id: string; kind: 'table' | 'view'; pageIndex: number; pageS
     MatHeaderRow, MatRow, MatRowDef, MatHeaderRowDef,
     MatHeaderCellDef, MatCellDef,
     // Paginator
-    MatPaginator, LoadingIndicator,
+    MatPaginator, LoadingIndicator, MatToolbar,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',

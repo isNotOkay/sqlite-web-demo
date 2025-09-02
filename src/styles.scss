@@ -50,4 +50,9 @@ body {
   @include mat.table-overrides((
     row-item-container-height: 30px,
   ));
+  @include mat.toolbar-overrides((
+    container-background-color: var(--mat-sys-primary-container),
+    standard-height: 50px,
+    mobile-height: 50px
+  ));
 }
