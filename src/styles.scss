@@ -12,7 +12,7 @@ html {
       tertiary: mat.$blue-palette,
     ),
     typography: Roboto,
-    density: 0,
+    density: -2,
   ));
 }
 
@@ -50,8 +50,8 @@ body {
   @include mat.table-overrides((
     header-headline-color: white,
     row-item-outline-color: var(--mat-sys-outline-variant),
-    header-container-height: 35px,
-    row-item-container-height: 30px,
+    header-container-height: 40px,
+    row-item-container-height: 40px,
   ));
   @include mat.toolbar-overrides((
     standard-height: 50px,
