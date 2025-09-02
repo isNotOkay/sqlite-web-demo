@@ -1,24 +1,31 @@
 // src/app/app.ts
-import { Component, inject, OnInit, signal, WritableSignal, ViewChild } from '@angular/core';
+import {Component, inject, OnInit, signal, ViewChild, WritableSignal} from '@angular/core';
 
-import { MatButtonModule } from '@angular/material/button';
+import {MatButtonModule} from '@angular/material/button';
 import {
-  MatCell, MatCellDef, MatColumnDef, MatHeaderCell, MatHeaderCellDef,
-  MatHeaderRow, MatHeaderRowDef, MatRow, MatRowDef, MatTable
+  MatCell,
+  MatCellDef,
+  MatColumnDef,
+  MatHeaderCell,
+  MatHeaderCellDef,
+  MatHeaderRow,
+  MatHeaderRowDef,
+  MatRow,
+  MatRowDef,
+  MatTable
 } from '@angular/material/table';
-import { MatPaginator, PageEvent } from '@angular/material/paginator';
-import { MatToolbar } from '@angular/material/toolbar';
+import {MatPaginator, PageEvent} from '@angular/material/paginator';
 
-import { DataApiService } from './services/data-api.service';
-import { GridRow } from './models/grid';
+import {DataApiService} from './services/data-api.service';
+import {GridRow} from './models/grid';
 
-import { of, Subject, forkJoin } from 'rxjs';
-import { catchError, distinctUntilChanged, switchMap, tap } from 'rxjs/operators';
-import { LoadingIndicator } from './components/loading-indicator/loading-indicator';
-import { MatDivider } from '@angular/material/divider';
+import {forkJoin, of, Subject} from 'rxjs';
+import {catchError, distinctUntilChanged, switchMap, tap} from 'rxjs/operators';
+import {LoadingIndicator} from './components/loading-indicator/loading-indicator';
+import {MatDivider} from '@angular/material/divider';
 
 // NEW: material sort
-import { MatSort, Sort, MatSortHeader } from '@angular/material/sort';
+import {MatSort, MatSortHeader, Sort} from '@angular/material/sort';
 
 interface NavNode {
   id?: string;
@@ -45,8 +52,7 @@ type LoadParams = {
     MatTable, MatHeaderCell, MatCell, MatColumnDef,
     MatHeaderRow, MatRow, MatRowDef, MatHeaderRowDef,
     MatHeaderCellDef, MatCellDef,
-    MatPaginator, LoadingIndicator, MatToolbar, MatButtonModule, MatDivider,
-    // NEW:
+    MatPaginator, LoadingIndicator, MatButtonModule, MatDivider,
     MatSort, MatSortHeader,
   ],
   templateUrl: './app.html',
@@ -55,31 +61,26 @@ type LoadParams = {
 export class App implements OnInit {
   protected loading: WritableSignal<boolean> = signal(true);
 
-  // Sidebar
   treeData: NavNode[] = [
-    { name: 'Tables', children: [] },
-    { name: 'Views',  children: [] },
+    {name: 'Tables', children: []},
+    {name: 'Views', children: []},
   ];
   selectedNode: NavNode | null = null;
 
   isSelectable = (node: NavNode) => !!node.id && !node.placeholder;
   isSelected = (node: NavNode) => this.selectedNode === node;
 
-  // Grid
   columns: string[] = [];
   displayedColumns: string[] = [];
   rows: GridRow[] = [];
   total = 0;
-
   pageIndex = 0;
   pageSize = 50;
-
-  // NEW: current sort
   sortBy: string | null = null;
   sortDir: 'asc' | 'desc' = 'asc';
 
-  @ViewChild(MatPaginator, { static: true }) paginator!: MatPaginator;
-  @ViewChild(MatSort, { static: true }) sort!: MatSort;
+  @ViewChild(MatPaginator, {static: true}) paginator!: MatPaginator;
+  @ViewChild(MatSort, {static: true}) sort!: MatSort;
 
   private readonly api = inject(DataApiService);
   private readonly load$ = new Subject<LoadParams>();
@@ -88,17 +89,17 @@ export class App implements OnInit {
     // Build the sections from API.
     forkJoin({
       tables: this.api.listTables().pipe(catchError(() => of([]))),
-      views:  this.api.listViews().pipe(catchError(() => of([]))),
-    }).subscribe(({ tables, views }) => {
-      let tableLeaves: NavNode[] = (tables ?? []).map(t => ({ id: t.name, name: t.name, kind: 'table' as const }));
-      let viewLeaves:  NavNode[] = (views  ?? []).map(v => ({ id: v.name, name: v.name, kind: 'view'  as const }));
+      views: this.api.listViews().pipe(catchError(() => of([]))),
+    }).subscribe(({tables, views}) => {
+      let tableLeaves: NavNode[] = (tables ?? []).map(t => ({id: t.name, name: t.name, kind: 'table' as const}));
+      let viewLeaves: NavNode[] = (views ?? []).map(v => ({id: v.name, name: v.name, kind: 'view' as const}));
 
-      if (tableLeaves.length === 0) tableLeaves = [{ name: 'No tables found', placeholder: true }];
-      if (viewLeaves.length === 0)  viewLeaves  = [{ name: 'No views found',  placeholder: true }];
+      if (tableLeaves.length === 0) tableLeaves = [{name: 'No tables found', placeholder: true}];
+      if (viewLeaves.length === 0) viewLeaves = [{name: 'No views found', placeholder: true}];
 
       this.treeData = [
-        { name: 'Tables', children: tableLeaves },
-        { name: 'Views',  children: viewLeaves  },
+        {name: 'Tables', children: tableLeaves},
+        {name: 'Views', children: viewLeaves},
       ];
 
       const firstReal =
@@ -125,13 +126,13 @@ export class App implements OnInit {
           (a.sortDir ?? 'asc') === (b.sortDir ?? 'asc')
         ),
         tap(() => this.loading.set(true)),
-        switchMap(({ id, kind, pageIndex, pageSize, sortBy, sortDir }) =>
+        switchMap(({id, kind, pageIndex, pageSize, sortBy, sortDir}) =>
           this.api.getRows(kind, id, pageIndex, pageSize, sortBy ?? undefined, sortDir ?? 'asc').pipe(
-            catchError(() => of({ items: [], total: 0 }))
+            catchError(() => of({items: [], total: 0}))
           )
         )
       )
-      .subscribe(({ items, total }) => {
+      .subscribe(({items, total}) => {
         this.rows = items;
         this.total = total;
 
@@ -139,8 +140,14 @@ export class App implements OnInit {
         const keys: string[] = [];
         const seen = new Set<string>();
         if (this.rows.length > 0) {
-          for (const k of Object.keys(this.rows[0]!)) { seen.add(k); keys.push(k); }
-          for (const r of this.rows) for (const k of Object.keys(r)) if (!seen.has(k)) { seen.add(k); keys.push(k); }
+          for (const k of Object.keys(this.rows[0]!)) {
+            seen.add(k);
+            keys.push(k);
+          }
+          for (const r of this.rows) for (const k of Object.keys(r)) if (!seen.has(k)) {
+            seen.add(k);
+            keys.push(k);
+          }
         }
         this.columns = keys;
         this.displayedColumns = [...this.columns];
