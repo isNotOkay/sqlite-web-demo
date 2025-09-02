@@ -56,10 +56,20 @@
       >
         @for (col of columns; track col) {
           <ng-container [matColumnDef]="col">
-            <th mat-header-cell *matHeaderCellDef sticky mat-sort-header="{{ col }}">
+            <th
+              mat-header-cell
+              *matHeaderCellDef
+              sticky
+              mat-sort-header="{{ col }}"
+              [class.numeric]="isNumericColumn(col)">
               {{ col }}
             </th>
-            <td mat-cell *matCellDef="let row">{{ row[col] }}</td>
+            <td
+              mat-cell
+              *matCellDef="let row"
+              [class.numeric]="isNumeric(row[col])">
+              {{ row[col] }}
+            </td>
           </ng-container>
         }
         <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
@@ -74,8 +84,7 @@
       [hidePageSize]="true"
       showFirstLastButtons
       class="footer-paginator"
-      (page)="onPage($event)"
-    >
+      (page)="onPage($event)">
     </mat-paginator>
   </section>
 </div>

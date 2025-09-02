@@ -109,14 +109,19 @@
   fill: white !important;
 }
 
-/* --- Striped (zebra) rows using MD3 tokens --- */
-
-
+/* --- Striped (zebra) rows using MD3 tokens (subtle) --- */
 table.striped tr.mat-mdc-row:nth-child(odd) {
   background-color: color-mix(
       in srgb,
-      var(--mat-sys-surface) 10%,
-      var(--mat-sys-outline) 5%
+      var(--mat-sys-surface) 92%,
+      var(--mat-sys-outline) 8%
   );
 }
 
+/* Right-align numeric cells & headers */
+td.mat-mdc-cell.numeric,
+th.mat-mdc-header-cell.numeric {
+  text-align: right;
+  /* keep digits aligned nicely */
+  font-variant-numeric: tabular-nums;
+}
