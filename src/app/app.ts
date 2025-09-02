@@ -1,22 +1,20 @@
-import { Component, inject, OnInit, signal, ViewChild, WritableSignal } from '@angular/core';
+import { Component, inject, OnInit, signal, WritableSignal, ViewChild } from '@angular/core';
 
-import { MatTreeModule } from '@angular/material/tree';
-import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-
 import {
   MatCell, MatCellDef, MatColumnDef, MatHeaderCell, MatHeaderCellDef,
   MatHeaderRow, MatHeaderRowDef, MatRow, MatRowDef, MatTable
 } from '@angular/material/table';
 import { MatPaginator, PageEvent } from '@angular/material/paginator';
+import { MatToolbar } from '@angular/material/toolbar';
 
 import { DataApiService } from './services/data-api.service';
 import { GridRow } from './models/grid';
 
 import { of, Subject, forkJoin } from 'rxjs';
 import { catchError, distinctUntilChanged, switchMap, tap } from 'rxjs/operators';
-import {LoadingIndicator} from './components/loading-indicator/loading-indicator';
-import {MatToolbar} from '@angular/material/toolbar';
+import { LoadingIndicator } from './components/loading-indicator/loading-indicator';
+import {MatDivider} from '@angular/material/divider';
 
 interface NavNode {
   id?: string;                    // database object name
@@ -32,14 +30,13 @@ type LoadParams = { id: string; kind: 'table' | 'view'; pageIndex: number; pageS
   selector: 'app-root',
   standalone: true,
   imports: [
-    // Tree
-    MatTreeModule, MatButtonModule, MatIconModule,
+    // Sidebar uses plain HTML (no MatTree)
     // Table
     MatTable, MatHeaderCell, MatCell, MatColumnDef,
     MatHeaderRow, MatRow, MatRowDef, MatHeaderRowDef,
     MatHeaderCellDef, MatCellDef,
-    // Paginator
-    MatPaginator, LoadingIndicator, MatToolbar,
+    // Paginator / Toolbar / Buttons
+    MatPaginator, LoadingIndicator, MatToolbar, MatButtonModule, MatDivider,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',
@@ -47,19 +44,14 @@ type LoadParams = { id: string; kind: 'table' | 'view'; pageIndex: number; pageS
 export class App implements OnInit {
   protected loading: WritableSignal<boolean> = signal(true);
 
-  // -------- TREE (populated at runtime) ----------
+  // -------- SIDEBAR DATA (populated at runtime) ----------
   treeData: NavNode[] = [
     { name: 'Tables', children: [] },
     { name: 'Views',  children: [] },
   ];
 
-  childrenAccessor = (node: NavNode) => node.children ?? [];
-  hasChild = (_: number, node: NavNode) => !!node.children && node.children.length > 0;
-
   selectedNode: NavNode | null = null;
 
-  // Top-level groups have no `id`
-  isTopLevel = (node: NavNode) => !node.id;
   // Selectable = leaf with a real id and not a placeholder
   isSelectable = (node: NavNode) => !!node.id && !node.placeholder;
   isSelected = (node: NavNode) => this.selectedNode === node;
@@ -79,7 +71,7 @@ export class App implements OnInit {
   private readonly load$ = new Subject<LoadParams>();
 
   ngOnInit(): void {
-    // Build the tree from API — replace the entire array so the tree reevaluates templates.
+    // Build the sections from API.
     forkJoin({
       tables: this.api.listTables().pipe(catchError(() => of([]))),
       views:  this.api.listViews().pipe(catchError(() => of([]))),
@@ -142,7 +134,7 @@ export class App implements OnInit {
 
   // ---- UI handlers ----
   selectNode(node: NavNode) {
-    if (!this.isSelectable(node)) return; // ignore groups & placeholders
+    if (!this.isSelectable(node)) return; // ignore placeholders
     if (this.selectedNode === node) return;
 
     this.selectedNode = node;

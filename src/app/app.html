@@ -1,61 +1,46 @@
 <div class="layout">
-  <!-- LEFT: Tree (groups always visible) -->
+  <!-- LEFT: Static list with sections -->
   <aside class="sidenav">
-    <mat-tree #tree [dataSource]="treeData" [childrenAccessor]="childrenAccessor">
+    <nav class="nav-list" role="navigation" aria-label="Database objects">
+      <div class="nav-section" role="group" aria-label="Tables">
+        <div class="nav-section-label">Tables</div>
+        @for (node of (treeData[0]?.children ?? []); track node.name) {
+          <button
+            type="button"
+            class="nav-item"
+            [class.selectable]="isSelectable(node)"
+            [class.selected]="isSelected(node)"
+            [attr.aria-current]="isSelected(node) ? 'true' : null"
+            [disabled]="!isSelectable(node)"
+            (click)="selectNode(node)">
+            {{ node.name }}
+          </button>
+        }
+      </div>
 
-      <!-- Leaf: selectable item OR placeholder -->
-      <mat-tree-node
-        *matTreeNodeDef="let node"
-        matTreeNodePadding
-        class="mat-tree-node tree-node"
-        [class.selectable]="isSelectable(node)"
-        [class.selected]="isSelectable(node) && isSelected(node)"
-        [attr.aria-selected]="isSelectable(node) ? isSelected(node) : null"
-        [attr.tabindex]="isSelectable(node) ? 0 : -1"
-        (click)="selectNode(node)"
-        (keydown.enter)="selectNode(node)"
-        (keydown.space)="selectNode(node)">
-        <button matIconButton disabled></button>
-        <span class="label" [style.opacity]="node.placeholder ? 0.6 : 1">
-          {{ node.name }}
-        </span>
-      </mat-tree-node>
+      <mat-divider></mat-divider>
 
-      <!-- Expandable group: Tables / Views (NOT selectable) -->
-      <mat-tree-node
-        *matTreeNodeDef="let node; when: hasChild"
-        matTreeNodePadding
-        matTreeNodeToggle
-        class="mat-tree-node tree-node"
-        [cdkTreeNodeTypeaheadLabel]="node.name"
-        [attr.tabindex]="-1">
-        <button
-          matIconButton
-          matTreeNodeToggle
-          (click)="$event.stopPropagation()"
-          [attr.aria-label]="'Toggle ' + node.name">
-          <mat-icon class="mat-icon-rtl-mirror">
-            {{ tree.isExpanded(node) ? 'expand_more' : 'chevron_right' }}
-          </mat-icon>
-        </button>
-        <span class="label">{{ node.name }}</span>
-      </mat-tree-node>
-
-    </mat-tree>
+      <div class="nav-section" role="group" aria-label="Views">
+        <div class="nav-section-label">Views</div>
+        @for (node of (treeData[1]?.children ?? []); track node.name) {
+          <button
+            type="button"
+            class="nav-item"
+            [class.selectable]="isSelectable(node)"
+            [class.selected]="isSelected(node)"
+            [attr.aria-current]="isSelected(node) ? 'true' : null"
+            [disabled]="!isSelectable(node)"
+            (click)="selectNode(node)">
+            {{ node.name }}
+          </button>
+        }
+      </div>
+    </nav>
   </aside>
+
 
   <!-- RIGHT: Dynamic grid + paginator -->
   <section class="content" style="position: relative;">
-    <!-- TABLE TOOLBAR: local to the content pane -->
-    <mat-toolbar class="table-toolbar">
-
-      <span class="mat-sys-headline-small">
-        {{ selectedNode?.name || 'Select an item' }}
-      </span>
-      <button matButton class="danger">Delete</button>
-
-    </mat-toolbar>
-
     @if (loading()) {
       <app-loading-indicator/>
     }
