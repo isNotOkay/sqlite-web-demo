@@ -49,9 +49,11 @@
     <!-- TABLE TOOLBAR: local to the content pane -->
     <mat-toolbar class="table-toolbar">
 
-      <span class="title">
+      <span class="mat-sys-headline-small">
         {{ selectedNode?.name || 'Select an item' }}
       </span>
+      <button matButton class="danger">Delete</button>
+
     </mat-toolbar>
 
     @if (loading()) {

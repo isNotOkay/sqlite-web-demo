@@ -48,11 +48,20 @@ body {
 // Customize the entire app. Change :root to your selector if you want to scope the styles.
 :root {
   @include mat.table-overrides((
+    header-headline-color: white,
+    row-item-outline-color: var(--mat-sys-outline-variant),
+    header-container-height: 35px,
     row-item-container-height: 30px,
   ));
   @include mat.toolbar-overrides((
-    container-background-color: var(--mat-sys-primary-container),
     standard-height: 50px,
     mobile-height: 50px
   ));
+
+  .mat-mdc-table thead {
+    background-color: var(--mat-sys-primary); // or surface-variant, etc.
+  }
 }
+
+
+

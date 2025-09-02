@@ -55,6 +55,15 @@
 }
 
 .table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   /* pin the flex item so it won't shrink in the column layout */
   flex: 0 0 var(--mat-toolbar-standard-height);
+}
+
+
+// TODO: How to do this with Angular 20 and M3?
+.danger {
+  color: var(--mat-sys-error) !important;
 }
