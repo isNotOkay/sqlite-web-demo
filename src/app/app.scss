@@ -98,3 +98,8 @@
 .mat-mdc-table thead {
   background-color: var(--mat-sys-primary);
 }
+
+::ng-deep .mat-sort-header-arrow svg {
+  fill: white !important;
+
+}

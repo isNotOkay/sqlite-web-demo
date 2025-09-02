@@ -1,3 +1,4 @@
+// src/app/services/data-api.service.ts
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { delay, map, Observable } from 'rxjs';
@@ -21,10 +22,24 @@ export class DataApiService {
       .pipe(map(r => r.items ?? []));
   }
 
-  getRows(kind: 'table' | 'view', id: string, pageIndex: number, pageSize: number): Observable<PagedResult<GridRow>> {
-    const params = new HttpParams()
+  // NEW: optional sortBy/sortDir
+  getRows(
+    kind: 'table' | 'view',
+    id: string,
+    pageIndex: number,
+    pageSize: number,
+    sortBy?: string | null,
+    sortDir: 'asc' | 'desc' = 'asc'
+  ): Observable<PagedResult<GridRow>> {
+    let params = new HttpParams()
       .set('page', String(pageIndex + 1))
       .set('pageSize', String(pageSize));
+
+    if (sortBy && sortBy.trim().length > 0) {
+      params = params
+        .set('sortBy', sortBy)
+        .set('sortDir', sortDir);
+    }
 
     return this.http
       .get<any>(`${this.baseUrl}/api/${kind === 'table' ? 'tables' : 'views'}/${encodeURIComponent(id)}`, { params, observe: 'response' })
