@@ -26,6 +26,7 @@ import { MatDivider } from '@angular/material/divider';
 
 // NEW: material sort
 import { MatSort, MatSortHeader, Sort } from '@angular/material/sort';
+import {RealtimeService} from './services/realtime.service';
 
 interface NavNode {
   id?: string;
@@ -60,6 +61,8 @@ type LoadParams = {
 })
 export class App implements OnInit {
   protected loading: WritableSignal<boolean> = signal(true);
+  private readonly realtime = inject(RealtimeService);
+
 
   treeData: NavNode[] = [
     { name: 'Tables', children: [] },
@@ -86,6 +89,8 @@ export class App implements OnInit {
   private readonly load$ = new Subject<LoadParams>();
 
   ngOnInit(): void {
+    this.realtime.start().catch((err) => console.error('SignalR start error', err));
+
     // Build the sections from API.
     forkJoin({
       tables: this.api.listTables().pipe(catchError(() => of([]))),
