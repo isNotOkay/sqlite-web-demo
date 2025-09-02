@@ -1,5 +1,5 @@
 // src/app/app.ts
-import { Component, inject, OnInit, signal, ViewChild, WritableSignal } from '@angular/core';
+import { Component, inject, OnInit, signal, ViewChild, WritableSignal, AfterViewInit } from '@angular/core';
 
 import { MatButtonModule } from '@angular/material/button';
 import {
@@ -26,7 +26,7 @@ import { MatDivider } from '@angular/material/divider';
 
 // NEW: material sort
 import { MatSort, MatSortHeader, Sort } from '@angular/material/sort';
-import {RealtimeService} from './services/realtime.service';
+import { RealtimeService, RemoteSelection } from './services/realtime.service';
 
 interface NavNode {
   id?: string;
@@ -59,10 +59,9 @@ type LoadParams = {
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
-export class App implements OnInit {
+export class App implements OnInit, AfterViewInit {
   protected loading: WritableSignal<boolean> = signal(true);
   private readonly realtime = inject(RealtimeService);
-
 
   treeData: NavNode[] = [
     { name: 'Tables', children: [] },
@@ -88,7 +87,11 @@ export class App implements OnInit {
   private readonly api = inject(DataApiService);
   private readonly load$ = new Subject<LoadParams>();
 
+  // NEW: hold incoming selection if it arrives before nav data is ready
+  private pendingSelection: RemoteSelection | null = null;
+
   ngOnInit(): void {
+    // Start SignalR connection
     this.realtime.start().catch((err) => console.error('SignalR start error', err));
 
     // Build the sections from API.
@@ -107,16 +110,14 @@ export class App implements OnInit {
         { name: 'Views',  children: viewLeaves  },
       ];
 
-      const firstReal =
-        tableLeaves.find(n => !n.placeholder) ??
-        viewLeaves.find(n => !n.placeholder) ?? null;
-
-      this.selectedNode = firstReal;
-      this.pageIndex = 0;
-      this.sortBy = null; // reset sort when app starts
-      this.sortDir = 'asc';
-      if (this.selectedNode) this.pushLoad();
-      else this.loading.set(false);
+      // If a remote selection already arrived, honor it now; otherwise select default.
+      if (this.pendingSelection) {
+        const { kind, id } = this.pendingSelection;
+        this.pendingSelection = null;
+        if (!this.trySelect(kind, id)) this.selectDefault();
+      } else {
+        this.selectDefault();
+      }
     });
 
     // Data loading pipeline
@@ -152,6 +153,25 @@ export class App implements OnInit {
         this.displayedColumns = [...this.columns];
         this.loading.set(false);
       });
+  }
+
+  // Start listening to server-driven selection after initial render
+  ngAfterViewInit(): void {
+    this.realtime.selection$.subscribe(sel => {
+      const hasData =
+        (this.treeData?.[0]?.children?.length ?? 0) > 0 ||
+        (this.treeData?.[1]?.children?.length ?? 0) > 0;
+
+      if (!hasData) {
+        // nav not ready yet -> queue it
+        this.pendingSelection = sel;
+        return;
+      }
+
+      if (!this.trySelect(sel.kind, sel.id)) {
+        console.warn('Remote selection not found:', sel);
+      }
+    });
   }
 
   // ---- UI handlers ----
@@ -228,5 +248,36 @@ export class App implements OnInit {
       }
     }
     return false;
+  }
+
+  // ---------- selection helpers (NEW) ----------
+  private selectDefault() {
+    const tables = this.treeData[0]?.children ?? [];
+    const views  = this.treeData[1]?.children ?? [];
+    const firstReal =
+      tables.find(n => !n.placeholder) ??
+      views.find(n => !n.placeholder) ?? null;
+
+    this.selectedNode = firstReal;
+    this.pageIndex = 0;
+    this.sortBy = null;
+    this.sortDir = 'asc';
+    if (this.selectedNode) this.pushLoad();
+    else this.loading.set(false); // nothing to load
+  }
+
+  private trySelect(kind: 'table' | 'view', id: string): boolean {
+    const index = kind === 'table' ? 0 : 1;
+    const list = this.treeData[index]?.children ?? [];
+    const node = list.find(n => n.id === id);
+    if (!node) return false;
+
+    this.selectedNode = node;
+    this.pageIndex = 0;
+    this.sortBy = null;
+    this.sortDir = 'asc';
+    if (this.sort) this.sort.active = this.sort.direction = '' as any;
+    this.pushLoad();
+    return true;
   }
 }
