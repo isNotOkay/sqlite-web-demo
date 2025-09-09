@@ -3,26 +3,24 @@ import {inject, Injectable} from '@angular/core';
 import {HttpClient, HttpParams, HttpResponse} from '@angular/common/http';
 import {map, Observable} from 'rxjs';
 import {PagedResult} from '../models/paged-result.model';
+import {Relation} from '../models/relation.model';
 
-type TableInfo = { name: string; rowCount?: number; columns?: string[] };
-type ViewInfo = { name: string; columns?: string[] };
 
 @Injectable({providedIn: 'root'})
 export class DataApiService {
   private http = inject(HttpClient);
   private readonly baseUrl = 'http://localhost:5282';
 
-  listTables(): Observable<TableInfo[]> {
-    return this.http.get<{ items: TableInfo[] }>(`${this.baseUrl}/api/tables`)
+  listTables(): Observable<Relation[]> {
+    return this.http.get<{ items: Relation[] }>(`${this.baseUrl}/api/tables`)
       .pipe(map(r => r.items ?? []));
   }
 
-  listViews(): Observable<ViewInfo[]> {
-    return this.http.get<{ items: ViewInfo[] }>(`${this.baseUrl}/api/views`)
+  listViews(): Observable<Relation[]> {
+    return this.http.get<{ items: Relation[] }>(`${this.baseUrl}/api/views`)
       .pipe(map(r => r.items ?? []));
   }
 
-  // NEW: optional sortBy/sortDir
   getRows(
     kind: 'table' | 'view',
     id: string,
@@ -36,9 +34,7 @@ export class DataApiService {
       .set('pageSize', String(pageSize));
 
     if (sortBy && sortBy.trim().length > 0) {
-      params = params
-        .set('sortBy', sortBy)
-        .set('sortDir', sortDir);
+      params = params.set('sortBy', sortBy).set('sortDir', sortDir);
     }
 
     return this.http

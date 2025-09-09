@@ -1,3 +1,4 @@
+// src/app/app.component.ts
 import {Component, computed, inject, OnInit, signal, viewChild} from '@angular/core';
 
 import {MatButtonModule} from '@angular/material/button';
@@ -25,6 +26,7 @@ import {LoadingIndicator} from './components/loading-indicator/loading-indicator
 import * as _ from 'underscore';
 import {RelationType} from './enums/relation-type.enum';
 import {ListItem} from './models/list-item.model';
+import {Relation} from './models/relation.model';
 
 @Component({
   selector: 'app-root',
@@ -44,7 +46,7 @@ export class AppComponent implements OnInit {
   protected listItems = signal<ListItem[]>([]);
   protected selectedListItem = signal<ListItem | null>(null);
   protected columnNames = signal<string[]>([]);
-  protected displayedColumns = computed(() => [...this.columnNames()]); // mirror (easy to evolve later)
+  protected displayedColumns = computed(() => [...this.columnNames()]);
   protected rows = signal<Record<string, unknown>[]>([]);
   protected totalCount = signal(0);
   protected pageIndex = signal(0);
@@ -53,6 +55,7 @@ export class AppComponent implements OnInit {
   protected sortDir = signal<'asc' | 'desc'>('asc');
   protected sort = viewChild.required(MatSort);
   protected readonly RelationType = RelationType;
+
   private loadRowsSubscription?: Subscription;
   private readonly dataApiService = inject(DataApiService);
 
@@ -93,28 +96,27 @@ export class AppComponent implements OnInit {
       this.dataApiService.listTables(),
       this.dataApiService.listViews(),
     ]).subscribe({
-      next: ([tables, views]) => {
-        const tableItems: ListItem[] = (tables ?? []).map(tableInfo => ({
-          id: tableInfo.name,
-          label: tableInfo.name,
-          relationType: RelationType.Table as const,
-          columns: tableInfo.columns ?? [],
-        }));
-        const viewItems: ListItem[] = (views ?? []).map(viewInfo => ({
-          id: viewInfo.name,
-          label: viewInfo.name,
-          relationType: RelationType.View as const,
-          columns: viewInfo.columns ?? [],
-        }));
+      next: ([tables, views]: [Relation[], Relation[]]) => {
+        const tableItems = this.toListItems(tables, RelationType.Table);
+        const viewItems = this.toListItems(views, RelationType.View);
 
         this.listItems.set([...tableItems, ...viewItems]);
-        this.selectFirstAvailable(); // kick off loading
+        this.selectFirstAvailable();
       },
       error: () => {
         this.listItems.set([]);
         this.loading.set(false);
       },
     });
+  }
+
+  private toListItems(relations: Relation[] | null | undefined, type: RelationType): ListItem[] {
+    return (relations ?? []).map(r => ({
+      id: r.name,
+      label: r.name,
+      relationType: type,
+      columns: r.columns ?? [],
+    }));
   }
 
   private updateColumns(): void {
@@ -136,6 +138,7 @@ export class AppComponent implements OnInit {
     if (first) this.loadRows();
     else this.loading.set(false);
   }
+
 
   protected selectItem(item: ListItem): void {
     const sel = this.selectedListItem();
