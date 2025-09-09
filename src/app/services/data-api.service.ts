@@ -51,7 +51,7 @@ export class DataApiService {
           const body = res.body ?? {};
           const items: Record<string, unknown>[] = Array.isArray(body.data) ? body.data : [];
           const total = typeof body.totalRows === 'number' ? body.totalRows : items.length;
-          return {items, total};
+          return {items, totalCount: total};
         })
       );
   }

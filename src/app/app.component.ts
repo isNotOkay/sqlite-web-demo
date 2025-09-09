@@ -49,7 +49,7 @@ export class AppComponent implements OnInit {
   protected columnNames: string[] = [];
   protected displayedColumns: string[] = [];
   protected rows: Record<string, unknown>[] = [];
-  protected total = 0;
+  protected totalCount = 0;
   protected pageIndex = 0;
   protected pageSize = 50;
   protected sortBy: string | null = null;
@@ -74,7 +74,7 @@ export class AppComponent implements OnInit {
         .subscribe({
           next: (result) => {
             this.rows = result.items;
-            this.total = result.total;
+            this.totalCount = result.totalCount;
 
             // Infer columns (stable order)
             const keys: string[] = [];
@@ -99,7 +99,7 @@ export class AppComponent implements OnInit {
           error: () => {
             // fallback on error
             this.rows = [];
-            this.total = 0;
+            this.totalCount = 0;
             this.columnNames = [];
             this.displayedColumns = [];
           },
