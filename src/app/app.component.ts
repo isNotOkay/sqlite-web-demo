@@ -102,14 +102,14 @@ export class AppComponent implements OnInit {
       this.dataApiService.listViews(),
     ]).subscribe({
       next: ([tables, views]) => {
-        const tableItems: ListItem[] = (tables ?? []).map(t => ({
-          id: t.name,
-          label: t.name,
+        const tableItems: ListItem[] = (tables ?? []).map(tableInfo => ({
+          id: tableInfo.name,
+          label: tableInfo.name,
           relationType: RelationType.Table as const,
         }));
-        const viewItems: ListItem[] = (views ?? []).map(v => ({
-          id: v.name,
-          label: v.name,
+        const viewItems: ListItem[] = (views ?? []).map(viewInfo => ({
+          id: viewInfo.name,
+          label: viewInfo.name,
           relationType: RelationType.View as const,
         }));
 
