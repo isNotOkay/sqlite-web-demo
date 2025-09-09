@@ -75,25 +75,7 @@ export class AppComponent implements OnInit {
           next: (result) => {
             this.rows = result.items;
             this.totalCount = result.totalCount;
-
-            // Infer columns (stable order)
-            const keys: string[] = [];
-            const seen = new Set<string>();
-            if (this.rows.length) {
-              for (const k of Object.keys(this.rows[0]!)) {
-                seen.add(k);
-                keys.push(k);
-              }
-              for (const row of this.rows) {
-                for (const key of Object.keys(row)) {
-                  if (!seen.has(key)) {
-                    seen.add(key);
-                    keys.push(key);
-                  }
-                }
-              }
-            }
-            this.columnNames = keys;
+            this.columnNames = this.inferColumnOrder(this.rows);
             this.displayedColumns = [...this.columnNames];
           },
           error: () => {
@@ -105,6 +87,13 @@ export class AppComponent implements OnInit {
           },
         });
     }
+  }
+
+  private inferColumnOrder(rows: Record<string, unknown>[]): string[] {
+    if (!rows.length) return [];
+    const first = Object.keys(rows[0]!);
+    const rest = rows.slice(1).flatMap(r => Object.keys(r));
+    return Array.from(new Set([...first, ...rest]));
   }
 
   private loadTablesAndViews(): void {
