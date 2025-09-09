@@ -108,15 +108,15 @@ export class App implements OnInit, AfterViewInit {
       .pipe(
         distinctUntilChanged((a, b) =>
           a.id === b.id &&
-          a.kind === b.kind &&
+          a.relationType === b.relationType &&
           a.pageIndex === b.pageIndex &&
           a.pageSize === b.pageSize &&
           (a.sortBy ?? null) === (b.sortBy ?? null) &&
           (a.sortDir ?? 'asc') === (b.sortDir ?? 'asc')
         ),
         tap(() => this.loading.set(true)),
-        switchMap(({id, kind, pageIndex, pageSize, sortBy, sortDir}) =>
-          this.api.getRows(kind, id, pageIndex, pageSize, sortBy, sortDir ?? 'asc')
+        switchMap(({id, relationType, pageIndex, pageSize, sortBy, sortDir}) =>
+          this.api.getRows(relationType, id, pageIndex, pageSize, sortBy, sortDir ?? 'asc')
             .pipe(catchError(() => of({items: [], total: 0})))
         )
       )
@@ -201,7 +201,7 @@ export class App implements OnInit, AfterViewInit {
     if (!this.selected) return;
     this.load$.next({
       id: this.selected.id,
-      kind: this.selected.relationType,
+      relationType: this.selected.relationType,
       pageIndex: this.pageIndex,
       pageSize: this.pageSize,
       sortBy: this.sortBy ?? undefined,
