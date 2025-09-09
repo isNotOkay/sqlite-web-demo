@@ -1,5 +1,4 @@
-// src/app/app.ts
-import {AfterViewInit, Component, inject, OnInit, signal, viewChild, WritableSignal} from '@angular/core';
+import {Component, inject, OnInit, signal, viewChild, WritableSignal} from '@angular/core';
 
 import {MatButtonModule} from '@angular/material/button';
 import {
@@ -23,7 +22,6 @@ import {catchError, distinctUntilChanged, switchMap, tap} from 'rxjs/operators';
 
 import {DataApiService} from './services/data-api.service';
 import {LoadingIndicator} from './components/loading-indicator/loading-indicator';
-import {RealtimeService, RemoteSelection} from './services/realtime.service';
 
 import * as _ from 'underscore';
 import {RelationType} from './enums/relation-type.enum';
@@ -40,10 +38,10 @@ import {LoadParams} from './models/load-params.model';
     MatPaginator, LoadingIndicator, MatButtonModule, MatDivider,
     MatSort, MatSortHeader,
   ],
-  templateUrl: './app.html',
-  styleUrl: './app.scss',
+  templateUrl: './app.component.html',
+  styleUrl: './app.component.scss',
 })
-export class App implements OnInit, AfterViewInit {
+export class AppComponent implements OnInit {
   protected loading: WritableSignal<boolean> = signal(true);
   protected listItems: ListItem[] = [];
   protected selectedListItem: ListItem | null = null;
@@ -58,13 +56,10 @@ export class App implements OnInit, AfterViewInit {
   protected sort = viewChild.required(MatSort);
   protected readonly RelationType = RelationType;
   private readonly dataApiService = inject(DataApiService);
-  private readonly realtimeService = inject(RealtimeService);
   private readonly load$ = new Subject<LoadParams>();
-  private pendingSelection: RemoteSelection | null = null;
 
 
   ngOnInit(): void {
-    this.realtimeService.start().catch(err => console.error('SignalR start error', err));
 
     // Fetch tables + views, then build flat list
     forkJoin({
@@ -83,15 +78,6 @@ export class App implements OnInit, AfterViewInit {
       }));
 
       this.listItems = [...tableItems, ...viewItems];
-
-      // Apply pending remote selection or pick first available
-      if (this.pendingSelection) {
-        const {relationType, id} = this.pendingSelection;
-        this.pendingSelection = null;
-        if (!this.trySelect(relationType, id)) this.selectFirstAvailable();
-      } else {
-        this.selectFirstAvailable();
-      }
     });
 
     // Data loading pipeline
@@ -138,17 +124,6 @@ export class App implements OnInit, AfterViewInit {
       });
   }
 
-  ngAfterViewInit(): void {
-    this.realtimeService.selection$.subscribe(selection => {
-      if (!this.listItems.length) {
-        this.pendingSelection = selection;
-        return;
-      }
-      if (!this.trySelect(selection.relationType, selection.id)) {
-        console.warn('Remote selection not found:', selection);
-      }
-    });
-  }
 
   protected selectItem(item: ListItem): void {
     if (this.selectedListItem?.id === item.id && this.selectedListItem?.relationType === item.relationType) return;

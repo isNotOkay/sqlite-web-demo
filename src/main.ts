@@ -2,9 +2,9 @@
 import {bootstrapApplication} from '@angular/platform-browser';
 import {provideHttpClient} from '@angular/common/http';
 import {provideZonelessChangeDetection} from '@angular/core'; // Angular 20
-import {App} from './app/app';
+import {AppComponent} from './app/app.component';
 
-bootstrapApplication(App, {
+bootstrapApplication(AppComponent, {
   providers: [
     provideZonelessChangeDetection(),   // 🔑 no Zone.js needed
     provideHttpClient(),
