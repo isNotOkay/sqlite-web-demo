@@ -17,8 +17,8 @@ import {MatPaginator, PageEvent} from '@angular/material/paginator';
 import {MatDivider} from '@angular/material/divider';
 import {MatSort, MatSortHeader, Sort} from '@angular/material/sort';
 
-import {forkJoin, of, Subject} from 'rxjs';
-import {catchError, switchMap, tap} from 'rxjs/operators';
+import {forkJoin, Subject} from 'rxjs';
+import {switchMap, tap} from 'rxjs/operators';
 
 import {DataApiService} from './services/data-api.service';
 import {LoadingIndicator} from './components/loading-indicator/loading-indicator';
@@ -62,26 +62,30 @@ export class AppComponent implements OnInit {
   private readonly load$ = new Subject<LoadParams>();
 
   ngOnInit(): void {
+    forkJoin([
+      this.dataApiService.listTables(),
+      this.dataApiService.listViews(),
+    ]).subscribe({
+      next: ([tables, views]) => {
+        const tableItems: ListItem[] = (tables ?? []).map(t => ({
+          id: t.name,
+          label: t.name,
+          relationType: RelationType.Table as const,
+        }));
+        const viewItems: ListItem[] = (views ?? []).map(v => ({
+          id: v.name,
+          label: v.name,
+          relationType: RelationType.View as const,
+        }));
 
-    // Fetch tables + views, then build flat list (use per-stream fallbacks)
-    forkJoin({
-      tables: this.dataApiService.listTables().pipe(catchError(() => of([]))),
-      views: this.dataApiService.listViews().pipe(catchError(() => of([]))),
-    }).subscribe(({tables, views}) => {
-      const tableItems: ListItem[] = (tables ?? []).map(t => ({
-        id: t.name,
-        label: t.name,
-        relationType: RelationType.Table as const,
-      }));
-      const viewItems: ListItem[] = (views ?? []).map(v => ({
-        id: v.name,
-        label: v.name,
-        relationType: RelationType.View as const,
-      }));
-      this.listItems.set([...tableItems, ...viewItems]);
-
-      // auto-select first available to kick off loading
-      this.selectFirstAvailable();
+        this.listItems.set([...tableItems, ...viewItems]);
+        this.selectFirstAvailable(); // kick off loading
+      },
+      error: () => {
+        // if either call fails, forkJoin errors—fallback to empty list
+        this.listItems.set([]);
+        this.loading.set(false);
+      },
     });
 
     this.load$
@@ -92,9 +96,9 @@ export class AppComponent implements OnInit {
         )
       )
       .subscribe({
-        next: ({items, total}) => {
-          this.rows = items;
-          this.total = total;
+        next: (result) => {
+          this.rows = result.items;
+          this.total = result.total;
 
           // Infer columns (stable order)
           const keys: string[] = [];
