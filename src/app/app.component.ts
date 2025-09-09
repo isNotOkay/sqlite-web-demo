@@ -1,4 +1,3 @@
-// src/app/app.component.ts
 import {Component, computed, inject, OnInit, signal, viewChild} from '@angular/core';
 
 import {MatButtonModule} from '@angular/material/button';
