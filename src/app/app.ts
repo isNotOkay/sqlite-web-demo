@@ -122,11 +122,11 @@ export class App implements OnInit, AfterViewInit {
             seen.add(k);
             keys.push(k);
           }
-          for (const r of this.rows) {
-            for (const k of Object.keys(r)) {
-              if (!seen.has(k)) {
-                seen.add(k);
-                keys.push(k);
+          for (const row of this.rows) {
+            for (const key of Object.keys(row)) {
+              if (!seen.has(key)) {
+                seen.add(key);
+                keys.push(key);
               }
             }
           }
@@ -138,13 +138,13 @@ export class App implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    this.realtime.selection$.subscribe(sel => {
+    this.realtime.selection$.subscribe(selection => {
       if (!this.items.length) {
-        this.pendingSelection = sel;
+        this.pendingSelection = selection;
         return;
       }
-      if (!this.trySelect(sel.relationType, sel.id)) {
-        console.warn('Remote selection not found:', sel);
+      if (!this.trySelect(selection.relationType, selection.id)) {
+        console.warn('Remote selection not found:', selection);
       }
     });
   }
