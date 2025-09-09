@@ -45,8 +45,8 @@ import {LoadParams} from './models/load-params.model';
 })
 export class App implements OnInit, AfterViewInit {
   protected loading: WritableSignal<boolean> = signal(true);
-  protected items: ListItem[] = [];               // flat list of tables + views
-  protected selected: ListItem | null = null;     // current selection
+  protected listItems: ListItem[] = [];
+  protected selectedListItem: ListItem | null = null;
   protected columnNames: string[] = [];
   protected displayedColumns: string[] = [];
   protected rows: Record<string, unknown>[] = [];
@@ -83,7 +83,7 @@ export class App implements OnInit, AfterViewInit {
         relationType: RelationType.View as const,
       }));
 
-      this.items = [...tableItems, ...viewItems];
+      this.listItems = [...tableItems, ...viewItems];
 
       // Apply pending remote selection or pick first available
       if (this.pendingSelection) {
@@ -141,7 +141,7 @@ export class App implements OnInit, AfterViewInit {
 
   ngAfterViewInit(): void {
     this.realtime.selection$.subscribe(selection => {
-      if (!this.items.length) {
+      if (!this.listItems.length) {
         this.pendingSelection = selection;
         return;
       }
@@ -152,9 +152,9 @@ export class App implements OnInit, AfterViewInit {
   }
 
   protected selectItem(item: ListItem): void {
-    if (this.selected?.id === item.id && this.selected?.relationType === item.relationType) return;
+    if (this.selectedListItem?.id === item.id && this.selectedListItem?.relationType === item.relationType) return;
 
-    this.selected = item;
+    this.selectedListItem = item;
     this.pageIndex = 0;
 
     // reset sorting when switching objects
@@ -195,30 +195,30 @@ export class App implements OnInit, AfterViewInit {
   }
 
   protected hasRelationType(relationType: RelationType): boolean {
-    return this.items.some(item => item.relationType === relationType);
+    return this.listItems.some(item => item.relationType === relationType);
   }
 
   private selectFirstAvailable(): void {
-    this.selected = this.items[0] ?? null;
+    this.selectedListItem = this.listItems[0] ?? null;
     this.pageIndex = 0;
     this.sortBy = null;
     this.sortDir = 'asc';
-    if (this.selected) this.pushLoad();
+    if (this.selectedListItem) this.pushLoad();
     else this.loading.set(false);
   }
 
   private trySelect(relationType: RelationType, id: string): boolean {
-    const found = this.items.find(item => item.relationType === relationType && item.id === id);
+    const found = this.listItems.find(item => item.relationType === relationType && item.id === id);
     if (!found) return false;
     this.selectItem(found);
     return true;
   }
 
   private pushLoad(): void {
-    if (!this.selected) return;
+    if (!this.selectedListItem) return;
     this.load$.next({
-      id: this.selected.id,
-      relationType: this.selected.relationType,
+      id: this.selectedListItem.id,
+      relationType: this.selectedListItem.relationType,
       pageIndex: this.pageIndex,
       pageSize: this.pageSize,
       sortBy: this.sortBy ?? undefined,

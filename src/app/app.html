@@ -7,13 +7,13 @@
       <!-- Tables -->
       <div class="nav-section" role="group" aria-label="Tables">
         <div class="nav-section-label">Tables</div>
-        @for (item of items; track item.id) {
+        @for (item of listItems; track item.id) {
           @if (item.relationType === RelationType.Table) {
             <button
               type="button"
               class="nav-item selectable"
-              [class.selected]="selected?.id === item.id && selected?.relationType === item.relationType"
-              [attr.aria-current]="selected?.id === item.id && selected?.relationType === item.relationType ? 'true' : null"
+              [class.selected]="selectedListItem?.id === item.id && selectedListItem?.relationType === item.relationType"
+              [attr.aria-current]="selectedListItem?.id === item.id && selectedListItem?.relationType === item.relationType ? 'true' : null"
               (click)="selectItem(item)">
               {{ item.label }}
             </button>
@@ -29,13 +29,13 @@
       <!-- Views -->
       <div class="nav-section" role="group" aria-label="Views">
         <div class="nav-section-label">Views</div>
-        @for (item of items; track item.id) {
+        @for (item of listItems; track item.id) {
           @if (item.relationType === 'view') {
             <button
               type="button"
               class="nav-item selectable"
-              [class.selected]="selected?.id === item.id && selected?.relationType === item.relationType"
-              [attr.aria-current]="selected?.id === item.id && selected?.relationType === item.relationType ? 'true' : null"
+              [class.selected]="selectedListItem?.id === item.id && selectedListItem?.relationType === item.relationType"
+              [attr.aria-current]="selectedListItem?.id === item.id && selectedListItem?.relationType === item.relationType ? 'true' : null"
               (click)="selectItem(item)">
               {{ item.label }}
             </button>
