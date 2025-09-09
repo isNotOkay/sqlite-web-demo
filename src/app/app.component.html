@@ -1,4 +1,4 @@
-<!-- src/app/app.html -->
+<!-- src/app/app.component.html -->
 <div class="layout">
   <!-- LEFT: Static list with sections (flat) -->
   <aside class="sidenav">
@@ -12,14 +12,14 @@
             <button
               type="button"
               class="nav-item selectable"
-              [class.selected]="selectedListItem?.id === item.id && selectedListItem?.relationType === item.relationType"
-              [attr.aria-current]="selectedListItem?.id === item.id && selectedListItem?.relationType === item.relationType ? 'true' : null"
+              [class.selected]="selectedListItem()?.id === item.id && selectedListItem()?.relationType === item.relationType"
+              [attr.aria-current]="selectedListItem()?.id === item.id && selectedListItem()?.relationType === item.relationType ? 'true' : null"
               (click)="selectItem(item)">
               {{ item.label }}
             </button>
           }
         }
-        @if (!hasRelationType(RelationType.View)) {
+        @if (!hasRelationType(RelationType.Table)) {
           <div class="nav-empty">No tables found</div>
         }
       </div>
@@ -30,12 +30,12 @@
       <div class="nav-section" role="group" aria-label="Views">
         <div class="nav-section-label">Views</div>
         @for (item of listItems(); track item.id) {
-          @if (item.relationType === 'view') {
+          @if (item.relationType === RelationType.View) {
             <button
               type="button"
               class="nav-item selectable"
-              [class.selected]="selectedListItem?.id === item.id && selectedListItem?.relationType === item.relationType"
-              [attr.aria-current]="selectedListItem?.id === item.id && selectedListItem?.relationType === item.relationType ? 'true' : null"
+              [class.selected]="selectedListItem()?.id === item.id && selectedListItem()?.relationType === item.relationType"
+              [attr.aria-current]="selectedListItem()?.id === item.id && selectedListItem()?.relationType === item.relationType ? 'true' : null"
               (click)="selectItem(item)">
               {{ item.label }}
             </button>
@@ -58,18 +58,18 @@
       <table
         class="striped"
         mat-table
-        [dataSource]="rows"
+        [dataSource]="rows()"
         matSort
-        [matSortDisabled]="columnNames.length === 0"
+        [matSortDisabled]="columnNames().length === 0"
         (matSortChange)="onSort($event)"
       >
-        @for (columnName of columnNames; track columnName) {
+        @for (columnName of columnNames(); track columnName) {
           <ng-container [matColumnDef]="columnName">
             <th
               mat-header-cell
               *matHeaderCellDef
               sticky
-              mat-sort-header="{{ columnName }}">
+              [mat-sort-header]="columnName">
               {{ columnName }}
             </th>
             <td
@@ -80,15 +80,15 @@
             </td>
           </ng-container>
         }
-        <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        <tr mat-header-row *matHeaderRowDef="displayedColumns(); sticky: true"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns();"></tr>
       </table>
     </div>
 
     <mat-paginator
-      [length]="totalCount"
-      [pageIndex]="pageIndex"
-      [pageSize]="pageSize"
+      [length]="totalCount()"
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"
       [hidePageSize]="true"
       showFirstLastButtons
       class="footer-paginator"

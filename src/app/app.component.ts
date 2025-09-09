@@ -1,4 +1,6 @@
-import {Component, inject, OnInit, signal, viewChild, WritableSignal} from '@angular/core';
+// src/app/app.component.ts
+import {Component, computed, inject, OnInit, signal, viewChild} from '@angular/core';
+
 import {MatButtonModule} from '@angular/material/button';
 import {
   MatCell,
@@ -39,23 +41,20 @@ import {ListItem} from './models/list-item.model';
   styleUrl: './app.component.scss',
 })
 export class AppComponent implements OnInit {
-  protected loading: WritableSignal<boolean> = signal(true);
-
+  protected loading = signal(true);
   protected listItems = signal<ListItem[]>([]);
-
-  protected selectedListItem: ListItem | null = null;
-  protected columnNames: string[] = [];
-  protected displayedColumns: string[] = [];
-  protected rows: Record<string, unknown>[] = [];
-  protected totalCount = 0;
-  protected pageIndex = 0;
-  protected pageSize = 50;
-  protected sortBy: string | null = null;
-  protected sortDir: 'asc' | 'desc' = 'asc';
+  protected selectedListItem = signal<ListItem | null>(null);
+  protected columnNames = signal<string[]>([]);
+  protected displayedColumns = computed(() => [...this.columnNames()]); // mirror (easy to evolve later)
+  protected rows = signal<Record<string, unknown>[]>([]);
+  protected totalCount = signal(0);
+  protected pageIndex = signal(0);
+  protected pageSize = signal(50);
+  protected sortBy = signal<string | null>(null);
+  protected sortDir = signal<'asc' | 'desc'>('asc');
   protected sort = viewChild.required(MatSort);
   protected readonly RelationType = RelationType;
   private loadRowsSubscription?: Subscription;
-
   private readonly dataApiService = inject(DataApiService);
 
   ngOnInit(): void {
@@ -63,30 +62,33 @@ export class AppComponent implements OnInit {
   }
 
   private loadRows(): void {
-    if (this.selectedListItem) {
-      this.loadRowsSubscription?.unsubscribe();
-      this.loading.set(true);
-      this.loadRowsSubscription = this.dataApiService
-        .getRows(
-          this.selectedListItem.relationType,
-          this.selectedListItem.id,
-          this.pageIndex,
-          this.pageSize,
-          this.sortBy ?? undefined,
-          this.sortDir ?? 'asc'
-        )
-        .pipe(finalize(() => this.loading.set(false)))
-        .subscribe({
-          next: (result) => {
-            this.rows = result.items;
-            this.totalCount = result.totalCount;
-          },
-          error: () => {
-            this.rows = [];
-            this.totalCount = 0;
-          },
-        });
-    }
+    const sel = this.selectedListItem();
+    if (!sel) return;
+
+    this.loadRowsSubscription?.unsubscribe();
+    this.loading.set(true);
+
+    this.loadRowsSubscription = this.dataApiService
+      .getRows(
+        sel.relationType,
+        sel.id,
+        this.pageIndex(),
+        this.pageSize(),
+        this.sortBy() ?? undefined,
+        this.sortDir()
+      )
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: (result) => {
+          this.rows.set(result.items);
+          this.totalCount.set(result.totalCount);
+        },
+        error: () => {
+          // fallback on error
+          this.rows.set([]);
+          this.totalCount.set(0);
+        },
+      });
   }
 
   private loadTablesAndViews(): void {
@@ -109,9 +111,10 @@ export class AppComponent implements OnInit {
         }));
 
         this.listItems.set([...tableItems, ...viewItems]);
-        this.selectFirstAvailable();
+        this.selectFirstAvailable(); // kick off loading
       },
       error: () => {
+        // if either call fails, forkJoin errors—fallback to empty list
         this.listItems.set([]);
         this.loading.set(false);
       },
@@ -119,39 +122,40 @@ export class AppComponent implements OnInit {
   }
 
   private updateColumns(): void {
-    const columns = this.selectedListItem?.columns ?? [];
-    this.columnNames = columns;
-    this.displayedColumns = [...columns];
+    const cols = this.selectedListItem()?.columns ?? [];
+    this.columnNames.set(cols);
+    // displayedColumns is computed
   }
 
   private selectFirstAvailable(): void {
     const items = this.listItems();
-    this.selectedListItem = items[0] ?? null;
-    this.pageIndex = 0;
-    this.sortBy = null;
-    this.sortDir = 'asc';
+    const first = items[0] ?? null;
+
+    this.selectedListItem.set(first);
+    this.pageIndex.set(0);
+    this.sortBy.set(null);
+    this.sortDir.set('asc');
 
     // Set columns from metadata immediately
     this.updateColumns();
 
-    if (this.selectedListItem) this.loadRows();
+    if (first) this.loadRows();
     else this.loading.set(false);
   }
 
   // ---- UI handlers ----
 
   protected selectItem(item: ListItem): void {
-    if (this.selectedListItem?.id === item.id &&
-      this.selectedListItem?.relationType === item.relationType) {
-      return;
-    }
+    const sel = this.selectedListItem();
+    if (sel?.id === item.id && sel?.relationType === item.relationType) return;
 
-    this.selectedListItem = item;
-    this.pageIndex = 0;
+    this.selectedListItem.set(item);
+    this.pageIndex.set(0);
 
     // reset sorting when switching objects
-    this.sortBy = null;
-    this.sortDir = 'asc';
+    this.sortBy.set(null);
+    this.sortDir.set('asc');
+
     const sort = this.sort();
     if (sort) {
       sort.active = '' as any;
@@ -159,25 +163,24 @@ export class AppComponent implements OnInit {
     }
 
     this.updateColumns();
-
     this.loadRows();
   }
 
   protected onPage(pageEvent: PageEvent): void {
-    this.pageIndex = pageEvent.pageIndex;
-    this.pageSize = pageEvent.pageSize;
+    this.pageIndex.set(pageEvent.pageIndex);
+    this.pageSize.set(pageEvent.pageSize);
     this.loadRows();
   }
 
   protected onSort(sort: Sort): void {
     if (!sort.direction) {
-      this.sortBy = null;
-      this.sortDir = 'asc';
+      this.sortBy.set(null);
+      this.sortDir.set('asc');
     } else {
-      this.sortBy = sort.active;
-      this.sortDir = sort.direction as 'asc' | 'desc';
+      this.sortBy.set(sort.active);
+      this.sortDir.set(sort.direction as 'asc' | 'desc');
     }
-    this.pageIndex = 0;
+    this.pageIndex.set(0);
     this.loadRows();
   }
 
@@ -186,7 +189,7 @@ export class AppComponent implements OnInit {
   }
 
   protected isNumericColumn(columnName: string): boolean {
-    const first = this.rows.find(row => {
+    const first = this.rows().find(row => {
       const value = row[columnName];
       return value != null && value !== '';
     });
