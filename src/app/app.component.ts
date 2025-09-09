@@ -17,8 +17,7 @@ import {MatPaginator, PageEvent} from '@angular/material/paginator';
 import {MatDivider} from '@angular/material/divider';
 import {MatSort, MatSortHeader, Sort} from '@angular/material/sort';
 
-import {forkJoin, Subject} from 'rxjs';
-import {switchMap, tap} from 'rxjs/operators';
+import {forkJoin} from 'rxjs';
 
 import {DataApiService} from './services/data-api.service';
 import {LoadingIndicator} from './components/loading-indicator/loading-indicator';
@@ -26,7 +25,6 @@ import {LoadingIndicator} from './components/loading-indicator/loading-indicator
 import * as _ from 'underscore';
 import {RelationType} from './enums/relation-type.enum';
 import {ListItem} from './models/list-item.model';
-import {LoadParams} from './models/load-params.model';
 
 @Component({
   selector: 'app-root',
@@ -44,7 +42,7 @@ import {LoadParams} from './models/load-params.model';
 export class AppComponent implements OnInit {
   protected loading: WritableSignal<boolean> = signal(true);
 
-  // CHANGED: keep UI-bound list as a signal so change detection runs
+  // keep UI-bound list as a signal so change detection runs
   protected listItems = signal<ListItem[]>([]);
 
   protected selectedListItem: ListItem | null = null;
@@ -58,43 +56,25 @@ export class AppComponent implements OnInit {
   protected sortDir: 'asc' | 'desc' = 'asc';
   protected sort = viewChild.required(MatSort);
   protected readonly RelationType = RelationType;
+
   private readonly dataApiService = inject(DataApiService);
-  private readonly load$ = new Subject<LoadParams>();
 
   ngOnInit(): void {
-    forkJoin([
-      this.dataApiService.listTables(),
-      this.dataApiService.listViews(),
-    ]).subscribe({
-      next: ([tables, views]) => {
-        const tableItems: ListItem[] = (tables ?? []).map(t => ({
-          id: t.name,
-          label: t.name,
-          relationType: RelationType.Table as const,
-        }));
-        const viewItems: ListItem[] = (views ?? []).map(v => ({
-          id: v.name,
-          label: v.name,
-          relationType: RelationType.View as const,
-        }));
+    this.loadTablesAndViews();
+  }
 
-        this.listItems.set([...tableItems, ...viewItems]);
-        this.selectFirstAvailable(); // kick off loading
-      },
-      error: () => {
-        // if either call fails, forkJoin errors—fallback to empty list
-        this.listItems.set([]);
-        this.loading.set(false);
-      },
-    });
+  private loadRows(
+    relationType: RelationType,
+    id: string,
+    pageIndex: number,
+    pageSize: number,
+    sortBy?: string | null,
+    sortDir?: 'asc' | 'desc',
+  ): void {
+    this.loading.set(true);
 
-    this.load$
-      .pipe(
-        tap(() => this.loading.set(true)),
-        switchMap(({id, relationType, pageIndex, pageSize, sortBy, sortDir}) =>
-          this.dataApiService.getRows(relationType, id, pageIndex, pageSize, sortBy, sortDir ?? 'asc')
-        )
-      )
+    this.dataApiService
+      .getRows(relationType, id, pageIndex, pageSize, sortBy ?? undefined, sortDir ?? 'asc')
       .subscribe({
         next: (result) => {
           this.rows = result.items;
@@ -122,7 +102,6 @@ export class AppComponent implements OnInit {
           this.loading.set(false);
         },
         error: () => {
-          // fallback on error
           this.rows = [];
           this.total = 0;
           this.columnNames = [];
@@ -130,11 +109,62 @@ export class AppComponent implements OnInit {
           this.loading.set(false);
         },
       });
+  }
 
+  private loadTablesAndViews(): void {
+    forkJoin([
+      this.dataApiService.listTables(),
+      this.dataApiService.listViews(),
+    ]).subscribe({
+      next: ([tables, views]) => {
+        const tableItems: ListItem[] = (tables ?? []).map(t => ({
+          id: t.name,
+          label: t.name,
+          relationType: RelationType.Table as const,
+        }));
+        const viewItems: ListItem[] = (views ?? []).map(v => ({
+          id: v.name,
+          label: v.name,
+          relationType: RelationType.View as const,
+        }));
+
+        this.listItems.set([...tableItems, ...viewItems]);
+        this.selectFirstAvailable(); // kick off loading
+      },
+      error: () => {
+        // if either call fails, forkJoin errors—fallback to empty list
+        this.listItems.set([]);
+        this.loading.set(false);
+      },
+    });
+  }
+
+  private selectFirstAvailable(): void {
+    const items = this.listItems();
+    this.selectedListItem = items[0] ?? null;
+    this.pageIndex = 0;
+    this.sortBy = null;
+    this.sortDir = 'asc';
+
+    if (this.selectedListItem) {
+      this.loadRows(
+        this.selectedListItem.relationType,
+        this.selectedListItem.id,
+        this.pageIndex,
+        this.pageSize,
+        this.sortBy,
+        this.sortDir,
+      );
+    } else {
+      this.loading.set(false);
+    }
   }
 
   protected selectItem(item: ListItem): void {
-    if (this.selectedListItem?.id === item.id && this.selectedListItem?.relationType === item.relationType) return;
+    if (this.selectedListItem?.id === item.id &&
+      this.selectedListItem?.relationType === item.relationType) {
+      return;
+    }
 
     this.selectedListItem = item;
     this.pageIndex = 0;
@@ -147,21 +177,30 @@ export class AppComponent implements OnInit {
       sort.active = '' as any;
       sort.direction = '' as any;
     }
-    this.pushLoad();
-  }
 
-  protected isNumericColumn(columnName: string): boolean {
-    const first = this.rows.find(row => {
-      const value = row[columnName];
-      return value != null && value !== '';
-    });
-    return first ? _.isNumber((first as any)[columnName]) : false;
+    this.loadRows(
+      item.relationType,
+      item.id,
+      this.pageIndex,
+      this.pageSize,
+      this.sortBy,
+      this.sortDir,
+    );
   }
 
   protected onPage(pageEvent: PageEvent): void {
     this.pageIndex = pageEvent.pageIndex;
     this.pageSize = pageEvent.pageSize;
-    this.pushLoad();
+
+    if (!this.selectedListItem) return;
+    this.loadRows(
+      this.selectedListItem.relationType,
+      this.selectedListItem.id,
+      this.pageIndex,
+      this.pageSize,
+      this.sortBy,
+      this.sortDir,
+    );
   }
 
   protected onSort(sort: Sort): void {
@@ -173,33 +212,27 @@ export class AppComponent implements OnInit {
       this.sortDir = sort.direction as 'asc' | 'desc';
     }
     this.pageIndex = 0;
-    this.pushLoad();
+
+    if (!this.selectedListItem) return;
+    this.loadRows(
+      this.selectedListItem.relationType,
+      this.selectedListItem.id,
+      this.pageIndex,
+      this.pageSize,
+      this.sortBy,
+      this.sortDir,
+    );
   }
 
   protected hasRelationType(relationType: RelationType): boolean {
     return this.listItems().some(item => item.relationType === relationType);
   }
 
-  private selectFirstAvailable(): void {
-    const items = this.listItems();
-    this.selectedListItem = items[0] ?? null;
-    this.pageIndex = 0;
-    this.sortBy = null;
-    this.sortDir = 'asc';
-    if (this.selectedListItem) this.pushLoad();
-    else this.loading.set(false);
-  }
-
-
-  private pushLoad(): void {
-    if (!this.selectedListItem) return;
-    this.load$.next({
-      id: this.selectedListItem.id,
-      relationType: this.selectedListItem.relationType,
-      pageIndex: this.pageIndex,
-      pageSize: this.pageSize,
-      sortBy: this.sortBy ?? undefined,
-      sortDir: this.sortBy ? this.sortDir : undefined,
+  protected isNumericColumn(columnName: string): boolean {
+    const first = this.rows.find(row => {
+      const value = row[columnName];
+      return value != null && value !== '';
     });
+    return first ? _.isNumber((first as any)[columnName]) : false;
   }
 }
