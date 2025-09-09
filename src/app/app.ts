@@ -170,7 +170,7 @@ export class App implements OnInit, AfterViewInit {
 
   protected isNumericColumn(columnName: string): boolean {
     const first = this.rows.find(row => {
-      const value = (row as any)[columnName];
+      const value = row[columnName];
       return value != null && value !== '';
     });
     return first ? _.isNumber((first as any)[columnName]) : false;
