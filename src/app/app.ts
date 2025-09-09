@@ -56,10 +56,12 @@ export class App implements OnInit, AfterViewInit {
   protected sortBy: string | null = null;
   protected sortDir: 'asc' | 'desc' = 'asc';
   protected sort = viewChild.required(MatSort);
+  protected readonly RelationType = RelationType;
   private readonly api = inject(DataApiService);
   private readonly realtime = inject(RealtimeService);
   private readonly load$ = new Subject<LoadParams>();
   private pendingSelection: RemoteSelection | null = null;
+
 
   ngOnInit(): void {
     // Start SignalR
@@ -204,8 +206,8 @@ export class App implements OnInit, AfterViewInit {
     this.pushLoad();
   }
 
-  protected hasKind(kind: 'table' | 'view'): boolean {
-    return this.items.some(item => item.relationType === kind);
+  protected hasRelationType(relationType: RelationType): boolean {
+    return this.items.some(item => item.relationType === relationType);
   }
 
   private selectFirstAvailable(): void {

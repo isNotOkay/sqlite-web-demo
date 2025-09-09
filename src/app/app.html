@@ -8,7 +8,7 @@
       <div class="nav-section" role="group" aria-label="Tables">
         <div class="nav-section-label">Tables</div>
         @for (item of items; track item.id) {
-          @if (item.relationType === 'table') {
+          @if (item.relationType === RelationType.Table) {
             <button
               type="button"
               class="nav-item selectable"
@@ -19,7 +19,7 @@
             </button>
           }
         }
-        @if (!hasKind('table')) {
+        @if (!hasRelationType(RelationType.View)) {
           <div class="nav-empty">No tables found</div>
         }
       </div>
@@ -41,7 +41,7 @@
             </button>
           }
         }
-        @if (!hasKind('view')) {
+        @if (!hasRelationType(RelationType.View)) {
           <div class="nav-empty">No views found</div>
         }
       </div>
@@ -51,7 +51,7 @@
   <!-- RIGHT: Dynamic grid + paginator -->
   <section class="content" style="position: relative;">
     @if (loading()) {
-      <app-loading-indicator />
+      <app-loading-indicator/>
     }
 
     <div class="table-container">
