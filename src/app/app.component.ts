@@ -111,11 +111,11 @@ export class AppComponent implements OnInit {
   }
 
   private toListItems(relations: Relation[] | null | undefined, type: RelationType): ListItem[] {
-    return (relations ?? []).map(r => ({
-      id: r.name,
-      label: r.name,
+    return (relations ?? []).map(relation => ({
+      id: relation.name,
+      label: relation.name,
       relationType: type,
-      columns: r.columns ?? [],
+      columns: relation.columns ?? [],
     }));
   }
 
