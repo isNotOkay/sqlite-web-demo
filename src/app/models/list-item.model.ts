@@ -4,4 +4,5 @@ export interface ListItem {
   id: string;
   relationType: RelationType;
   label: string;
+  columns?: string[];
 }

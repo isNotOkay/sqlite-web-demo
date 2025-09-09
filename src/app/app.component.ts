@@ -1,5 +1,4 @@
 import {Component, inject, OnInit, signal, viewChild, WritableSignal} from '@angular/core';
-
 import {MatButtonModule} from '@angular/material/button';
 import {
   MatCell,
@@ -42,7 +41,6 @@ import {ListItem} from './models/list-item.model';
 export class AppComponent implements OnInit {
   protected loading: WritableSignal<boolean> = signal(true);
 
-  // keep UI-bound list as a signal so change detection runs
   protected listItems = signal<ListItem[]>([]);
 
   protected selectedListItem: ListItem | null = null;
@@ -69,31 +67,27 @@ export class AppComponent implements OnInit {
       this.loadRowsSubscription?.unsubscribe();
       this.loading.set(true);
       this.loadRowsSubscription = this.dataApiService
-        .getRows(this.selectedListItem.relationType, this.selectedListItem.id, this.pageIndex, this.pageSize, this.sortBy ?? undefined, this.sortDir ?? 'asc')
+        .getRows(
+          this.selectedListItem.relationType,
+          this.selectedListItem.id,
+          this.pageIndex,
+          this.pageSize,
+          this.sortBy ?? undefined,
+          this.sortDir ?? 'asc'
+        )
         .pipe(finalize(() => this.loading.set(false)))
         .subscribe({
           next: (result) => {
             this.rows = result.items;
             this.totalCount = result.totalCount;
-            this.columnNames = this.inferColumnOrder(this.rows);
-            this.displayedColumns = [...this.columnNames];
+            // Column order is controlled by selection (from backend metadata).
           },
           error: () => {
-            // fallback on error
             this.rows = [];
             this.totalCount = 0;
-            this.columnNames = [];
-            this.displayedColumns = [];
           },
         });
     }
-  }
-
-  private inferColumnOrder(rows: Record<string, unknown>[]): string[] {
-    if (!rows.length) return [];
-    const first = Object.keys(rows[0]!);
-    const rest = rows.slice(1).flatMap(r => Object.keys(r));
-    return Array.from(new Set([...first, ...rest]));
   }
 
   private loadTablesAndViews(): void {
@@ -106,22 +100,29 @@ export class AppComponent implements OnInit {
           id: tableInfo.name,
           label: tableInfo.name,
           relationType: RelationType.Table as const,
+          columns: tableInfo.columns ?? [],
         }));
         const viewItems: ListItem[] = (views ?? []).map(viewInfo => ({
           id: viewInfo.name,
           label: viewInfo.name,
           relationType: RelationType.View as const,
+          columns: viewInfo.columns ?? [],
         }));
 
         this.listItems.set([...tableItems, ...viewItems]);
-        this.selectFirstAvailable(); // kick off loading
+        this.selectFirstAvailable();
       },
       error: () => {
-        // if either call fails, forkJoin errors—fallback to empty list
         this.listItems.set([]);
         this.loading.set(false);
       },
     });
+  }
+
+  private updateColumns(): void {
+    const columns = this.selectedListItem?.columns ?? [];
+    this.columnNames = columns;
+    this.displayedColumns = [...columns];
   }
 
   private selectFirstAvailable(): void {
@@ -130,6 +131,9 @@ export class AppComponent implements OnInit {
     this.pageIndex = 0;
     this.sortBy = null;
     this.sortDir = 'asc';
+
+    // Set columns from metadata immediately
+    this.updateColumns();
 
     if (this.selectedListItem) this.loadRows();
     else this.loading.set(false);
@@ -154,6 +158,8 @@ export class AppComponent implements OnInit {
       sort.active = '' as any;
       sort.direction = '' as any;
     }
+
+    this.updateColumns();
 
     this.loadRows();
   }
