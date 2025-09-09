@@ -1,21 +1,32 @@
-import { Component, inject, OnInit, signal, ViewChild, WritableSignal, AfterViewInit } from '@angular/core';
+import {AfterViewInit, Component, inject, OnInit, signal, ViewChild, WritableSignal} from '@angular/core';
 
-import { MatButtonModule } from '@angular/material/button';
+import {MatButtonModule} from '@angular/material/button';
 import {
-  MatCell, MatCellDef, MatColumnDef, MatHeaderCell, MatHeaderCellDef,
-  MatHeaderRow, MatHeaderRowDef, MatRow, MatRowDef, MatTable
+  MatCell,
+  MatCellDef,
+  MatColumnDef,
+  MatHeaderCell,
+  MatHeaderCellDef,
+  MatHeaderRow,
+  MatHeaderRowDef,
+  MatRow,
+  MatRowDef,
+  MatTable
 } from '@angular/material/table';
-import { MatPaginator, PageEvent } from '@angular/material/paginator';
-import { MatDivider } from '@angular/material/divider';
-import { MatSort, MatSortHeader, Sort } from '@angular/material/sort';
+import {MatPaginator, PageEvent} from '@angular/material/paginator';
+import {MatDivider} from '@angular/material/divider';
+import {MatSort, MatSortHeader, Sort} from '@angular/material/sort';
 
-import { forkJoin, of, Subject } from 'rxjs';
-import { catchError, distinctUntilChanged, switchMap, tap } from 'rxjs/operators';
+import {forkJoin, of, Subject} from 'rxjs';
+import {catchError, distinctUntilChanged, switchMap, tap} from 'rxjs/operators';
 
-import { DataApiService } from './services/data-api.service';
-import { GridRow } from './models/grid';
-import { LoadingIndicator } from './components/loading-indicator/loading-indicator';
-import { RealtimeService, RemoteSelection } from './services/realtime.service';
+import {DataApiService} from './services/data-api.service';
+import {GridRow} from './models/grid';
+import {LoadingIndicator} from './components/loading-indicator/loading-indicator';
+import {RealtimeService, RemoteSelection} from './services/realtime.service';
+
+import * as _ from 'underscore';
+
 
 type Kind = 'table' | 'view';
 
@@ -62,8 +73,8 @@ export class App implements OnInit, AfterViewInit {
   sortBy: string | null = null;
   sortDir: 'asc' | 'desc' = 'asc';
 
-  @ViewChild(MatPaginator, { static: true }) paginator!: MatPaginator;
-  @ViewChild(MatSort, { static: true }) sort!: MatSort;
+  @ViewChild(MatPaginator, {static: true}) paginator!: MatPaginator;
+  @ViewChild(MatSort, {static: true}) sort!: MatSort;
 
   private readonly api = inject(DataApiService);
   private readonly realtime = inject(RealtimeService);
@@ -79,10 +90,10 @@ export class App implements OnInit, AfterViewInit {
     // fetch tables + views, then build flat list
     forkJoin({
       tables: this.api.listTables().pipe(catchError(() => of([]))),
-      views:  this.api.listViews().pipe(catchError(() => of([]))),
-    }).subscribe(({ tables, views }) => {
-      const tableItems: ListItem[] = (tables ?? []).map(t => ({ id: t.name, label: t.name, kind: 'table' as const }));
-      const viewItems:  ListItem[] = (views  ?? []).map(v => ({ id: v.name, label: v.name, kind: 'view'  as const }));
+      views: this.api.listViews().pipe(catchError(() => of([]))),
+    }).subscribe(({tables, views}) => {
+      const tableItems: ListItem[] = (tables ?? []).map(t => ({id: t.name, label: t.name, kind: 'table' as const}));
+      const viewItems: ListItem[] = (views ?? []).map(v => ({id: v.name, label: v.name, kind: 'view' as const}));
 
       this.items = [
         ...tableItems,
@@ -91,7 +102,7 @@ export class App implements OnInit, AfterViewInit {
 
       // select something
       if (this.pendingSelection) {
-        const { kind, id } = this.pendingSelection;
+        const {kind, id} = this.pendingSelection;
         this.pendingSelection = null;
         if (!this.trySelect(kind, id)) this.selectFirstAvailable();
       } else {
@@ -111,12 +122,12 @@ export class App implements OnInit, AfterViewInit {
           (a.sortDir ?? 'asc') === (b.sortDir ?? 'asc')
         ),
         tap(() => this.loading.set(true)),
-        switchMap(({ id, kind, pageIndex, pageSize, sortBy, sortDir }) =>
+        switchMap(({id, kind, pageIndex, pageSize, sortBy, sortDir}) =>
           this.api.getRows(kind, id, pageIndex, pageSize, sortBy, sortDir ?? 'asc')
-            .pipe(catchError(() => of({ items: [], total: 0 })))
+            .pipe(catchError(() => of({items: [], total: 0})))
         )
       )
-      .subscribe(({ items, total }) => {
+      .subscribe(({items, total}) => {
         this.rows = items;
         this.total = total;
 
@@ -124,8 +135,14 @@ export class App implements OnInit, AfterViewInit {
         const keys: string[] = [];
         const seen = new Set<string>();
         if (this.rows.length) {
-          for (const k of Object.keys(this.rows[0]!)) { seen.add(k); keys.push(k); }
-          for (const r of this.rows) for (const k of Object.keys(r)) if (!seen.has(k)) { seen.add(k); keys.push(k); }
+          for (const k of Object.keys(this.rows[0]!)) {
+            seen.add(k);
+            keys.push(k);
+          }
+          for (const r of this.rows) for (const k of Object.keys(r)) if (!seen.has(k)) {
+            seen.add(k);
+            keys.push(k);
+          }
         }
         this.columns = keys;
         this.displayedColumns = [...this.columns];
@@ -160,6 +177,17 @@ export class App implements OnInit, AfterViewInit {
     this.pushLoad();
   }
 
+
+  protected isNumericColumn(column: string): boolean {
+    for (const row of this.rows) {
+      const value = (row as any)[column];
+      if (value != null && value !== '') {
+        return _.isNumber(value) || (_.isString(value) && _.isNumber(Number(value)));
+      }
+    }
+    return false;
+  }
+
   private selectFirstAvailable() {
     this.selected = this.items[0] ?? null;
     this.pageIndex = 0;
@@ -187,8 +215,8 @@ export class App implements OnInit, AfterViewInit {
       sortDir: this.sortBy ? this.sortDir : undefined,
     });
   }
-
   // ---- ui handlers ----
+
   onPage(e: PageEvent) {
     this.pageIndex = e.pageIndex;
     this.pageSize = e.pageSize;
@@ -207,26 +235,6 @@ export class App implements OnInit, AfterViewInit {
     this.pushLoad();
   }
 
-  // ---- numeric helpers (unchanged) ----
-  isNumeric(value: unknown): boolean {
-    if (value === null || value === undefined) return false;
-    if (typeof value === 'number' && isFinite(value)) return true;
-    if (typeof value === 'bigint') return true;
-    if (typeof value === 'string') {
-      const s = value.trim();
-      if (!s) return false;
-      return !Number.isNaN(Number(s));
-    }
-    return false;
-  }
-
-  isNumericColumn(col: string): boolean {
-    for (const r of this.rows) {
-      const v = (r as any)[col];
-      if (v !== null && v !== undefined && v !== '') return this.isNumeric(v);
-    }
-    return false;
-  }
 
   hasKind(kind: 'table' | 'view'): boolean {
     return this.items.some(i => i.kind === kind);
