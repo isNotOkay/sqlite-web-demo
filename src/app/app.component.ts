@@ -63,52 +63,47 @@ export class AppComponent implements OnInit {
     this.loadTablesAndViews();
   }
 
-  private loadRows(
-    relationType: RelationType,
-    id: string,
-    pageIndex: number,
-    pageSize: number,
-    sortBy?: string | null,
-    sortDir?: 'asc' | 'desc',
-  ): void {
-    this.loading.set(true);
+  private loadRows(): void {
+    if (this.selectedListItem) {
+      this.loading.set(true);
+      this.dataApiService
+        .getRows(this.selectedListItem.relationType, this.selectedListItem.id, this.pageIndex, this.pageSize, this.sortBy ?? undefined, this.sortDir ?? 'asc')
+        .subscribe({
+          next: (result) => {
+            this.rows = result.items;
+            this.total = result.total;
 
-    this.dataApiService
-      .getRows(relationType, id, pageIndex, pageSize, sortBy ?? undefined, sortDir ?? 'asc')
-      .subscribe({
-        next: (result) => {
-          this.rows = result.items;
-          this.total = result.total;
-
-          // Infer columns (stable order)
-          const keys: string[] = [];
-          const seen = new Set<string>();
-          if (this.rows.length) {
-            for (const k of Object.keys(this.rows[0]!)) {
-              seen.add(k);
-              keys.push(k);
-            }
-            for (const row of this.rows) {
-              for (const key of Object.keys(row)) {
-                if (!seen.has(key)) {
-                  seen.add(key);
-                  keys.push(key);
+            // Infer columns (stable order)
+            const keys: string[] = [];
+            const seen = new Set<string>();
+            if (this.rows.length) {
+              for (const k of Object.keys(this.rows[0]!)) {
+                seen.add(k);
+                keys.push(k);
+              }
+              for (const row of this.rows) {
+                for (const key of Object.keys(row)) {
+                  if (!seen.has(key)) {
+                    seen.add(key);
+                    keys.push(key);
+                  }
                 }
               }
             }
-          }
-          this.columnNames = keys;
-          this.displayedColumns = [...this.columnNames];
-          this.loading.set(false);
-        },
-        error: () => {
-          this.rows = [];
-          this.total = 0;
-          this.columnNames = [];
-          this.displayedColumns = [];
-          this.loading.set(false);
-        },
-      });
+            this.columnNames = keys;
+            this.displayedColumns = [...this.columnNames];
+            this.loading.set(false);
+          },
+          error: () => {
+            // fallback on error
+            this.rows = [];
+            this.total = 0;
+            this.columnNames = [];
+            this.displayedColumns = [];
+            this.loading.set(false);
+          },
+        });
+    }
   }
 
   private loadTablesAndViews(): void {
@@ -146,19 +141,11 @@ export class AppComponent implements OnInit {
     this.sortBy = null;
     this.sortDir = 'asc';
 
-    if (this.selectedListItem) {
-      this.loadRows(
-        this.selectedListItem.relationType,
-        this.selectedListItem.id,
-        this.pageIndex,
-        this.pageSize,
-        this.sortBy,
-        this.sortDir,
-      );
-    } else {
-      this.loading.set(false);
-    }
+    if (this.selectedListItem) this.loadRows();
+    else this.loading.set(false);
   }
+
+  // ---- UI handlers ----
 
   protected selectItem(item: ListItem): void {
     if (this.selectedListItem?.id === item.id &&
@@ -178,29 +165,13 @@ export class AppComponent implements OnInit {
       sort.direction = '' as any;
     }
 
-    this.loadRows(
-      item.relationType,
-      item.id,
-      this.pageIndex,
-      this.pageSize,
-      this.sortBy,
-      this.sortDir,
-    );
+    this.loadRows();
   }
 
   protected onPage(pageEvent: PageEvent): void {
     this.pageIndex = pageEvent.pageIndex;
     this.pageSize = pageEvent.pageSize;
-
-    if (!this.selectedListItem) return;
-    this.loadRows(
-      this.selectedListItem.relationType,
-      this.selectedListItem.id,
-      this.pageIndex,
-      this.pageSize,
-      this.sortBy,
-      this.sortDir,
-    );
+    this.loadRows();
   }
 
   protected onSort(sort: Sort): void {
@@ -212,16 +183,7 @@ export class AppComponent implements OnInit {
       this.sortDir = sort.direction as 'asc' | 'desc';
     }
     this.pageIndex = 0;
-
-    if (!this.selectedListItem) return;
-    this.loadRows(
-      this.selectedListItem.relationType,
-      this.selectedListItem.id,
-      this.pageIndex,
-      this.pageSize,
-      this.sortBy,
-      this.sortDir,
-    );
+    this.loadRows();
   }
 
   protected hasRelationType(relationType: RelationType): boolean {
