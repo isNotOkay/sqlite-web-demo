@@ -57,20 +57,19 @@ export class App implements OnInit, AfterViewInit {
   protected sortDir: 'asc' | 'desc' = 'asc';
   protected sort = viewChild.required(MatSort);
   protected readonly RelationType = RelationType;
-  private readonly api = inject(DataApiService);
-  private readonly realtime = inject(RealtimeService);
+  private readonly dataApiService = inject(DataApiService);
+  private readonly realtimeService = inject(RealtimeService);
   private readonly load$ = new Subject<LoadParams>();
   private pendingSelection: RemoteSelection | null = null;
 
 
   ngOnInit(): void {
-    // Start SignalR
-    this.realtime.start().catch(err => console.error('SignalR start error', err));
+    this.realtimeService.start().catch(err => console.error('SignalR start error', err));
 
     // Fetch tables + views, then build flat list
     forkJoin({
-      tables: this.api.listTables().pipe(catchError(() => of([]))),
-      views: this.api.listViews().pipe(catchError(() => of([]))),
+      tables: this.dataApiService.listTables().pipe(catchError(() => of([]))),
+      views: this.dataApiService.listViews().pipe(catchError(() => of([]))),
     }).subscribe(({tables, views}) => {
       const tableItems: ListItem[] = (tables ?? []).map(t => ({
         id: t.name,
@@ -108,7 +107,7 @@ export class App implements OnInit, AfterViewInit {
         ),
         tap(() => this.loading.set(true)),
         switchMap(({id, relationType, pageIndex, pageSize, sortBy, sortDir}) =>
-          this.api.getRows(relationType, id, pageIndex, pageSize, sortBy, sortDir ?? 'asc')
+          this.dataApiService.getRows(relationType, id, pageIndex, pageSize, sortBy, sortDir ?? 'asc')
             .pipe(catchError(() => of({items: [], total: 0})))
         )
       )
@@ -140,7 +139,7 @@ export class App implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    this.realtime.selection$.subscribe(selection => {
+    this.realtimeService.selection$.subscribe(selection => {
       if (!this.listItems.length) {
         this.pendingSelection = selection;
         return;
