@@ -1,10 +1,11 @@
-import { Injectable } from '@angular/core';
+import {Injectable} from '@angular/core';
 import * as signalR from '@microsoft/signalr';
-import { Subject } from 'rxjs';
+import {Subject} from 'rxjs';
+import {RelationType} from '../enums/relation-type.enum';
 
-export type RemoteSelection = { kind: 'table' | 'view'; id: string };
+export type RemoteSelection = { relationType: RelationType; id: string };
 
-@Injectable({ providedIn: 'root' })
+@Injectable({providedIn: 'root'})
 export class RealtimeService {
   private hub?: signalR.HubConnection;
   private readonly baseUrl = 'http://localhost:5282';
@@ -35,7 +36,7 @@ export class RealtimeService {
       const kind = (payload.kind ?? '').toString().toLowerCase();
       const id = (payload.id ?? '').toString();
       if ((kind === 'table' || kind === 'view') && id) {
-        this.selection$.next({ kind, id } as RemoteSelection);
+        this.selection$.next({relationType: kind, id} as RemoteSelection);
       }
     });
 

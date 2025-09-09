@@ -21,29 +21,14 @@ import {forkJoin, of, Subject} from 'rxjs';
 import {catchError, distinctUntilChanged, switchMap, tap} from 'rxjs/operators';
 
 import {DataApiService} from './services/data-api.service';
-import {GridRow} from './models/grid';
 import {LoadingIndicator} from './components/loading-indicator/loading-indicator';
 import {RealtimeService, RemoteSelection} from './services/realtime.service';
 
 import * as _ from 'underscore';
+import {RelationType} from './enums/relation-type.enum';
+import {ListItem} from './models/list-item.model';
+import {LoadParams} from './models/load-params.model';
 
-
-type Kind = 'table' | 'view';
-
-interface ListItem {
-  id: string;           // object name (e.g., "Users", "Orders")
-  kind: Kind;           // 'table' | 'view'
-  label: string;        // what we render in the sidebar
-}
-
-type LoadParams = {
-  id: string;
-  kind: Kind;
-  pageIndex: number;
-  pageSize: number;
-  sortBy?: string;
-  sortDir?: 'asc' | 'desc';
-};
 
 @Component({
   selector: 'app-root',
@@ -66,7 +51,7 @@ export class App implements OnInit, AfterViewInit {
 
   columns: string[] = [];
   displayedColumns: string[] = [];
-  rows: GridRow[] = [];
+  rows: Record<string, unknown>[] = [];
   total = 0;
   pageIndex = 0;
   pageSize = 50;
@@ -92,8 +77,16 @@ export class App implements OnInit, AfterViewInit {
       tables: this.api.listTables().pipe(catchError(() => of([]))),
       views: this.api.listViews().pipe(catchError(() => of([]))),
     }).subscribe(({tables, views}) => {
-      const tableItems: ListItem[] = (tables ?? []).map(t => ({id: t.name, label: t.name, kind: 'table' as const}));
-      const viewItems: ListItem[] = (views ?? []).map(v => ({id: v.name, label: v.name, kind: 'view' as const}));
+      const tableItems: ListItem[] = (tables ?? []).map(t => ({
+        id: t.name,
+        label: t.name,
+        relationType: RelationType.Table as const
+      }));
+      const viewItems: ListItem[] = (views ?? []).map(v => ({
+        id: v.name,
+        label: v.name,
+        relationType: RelationType.View as const
+      }));
 
       this.items = [
         ...tableItems,
@@ -102,9 +95,9 @@ export class App implements OnInit, AfterViewInit {
 
       // select something
       if (this.pendingSelection) {
-        const {kind, id} = this.pendingSelection;
+        const {relationType, id} = this.pendingSelection;
         this.pendingSelection = null;
-        if (!this.trySelect(kind, id)) this.selectFirstAvailable();
+        if (!this.trySelect(relationType, id)) this.selectFirstAvailable();
       } else {
         this.selectFirstAvailable();
       }
@@ -156,7 +149,7 @@ export class App implements OnInit, AfterViewInit {
         this.pendingSelection = sel;
         return;
       }
-      if (!this.trySelect(sel.kind, sel.id)) {
+      if (!this.trySelect(sel.relationType, sel.id)) {
         console.warn('Remote selection not found:', sel);
       }
     });
@@ -164,7 +157,7 @@ export class App implements OnInit, AfterViewInit {
 
   // ---- selection + load ----
   selectItem(item: ListItem) {
-    if (this.selected?.id === item.id && this.selected?.kind === item.kind) return;
+    if (this.selected?.id === item.id && this.selected?.relationType === item.relationType) return;
 
     this.selected = item;
     this.pageIndex = 0;
@@ -197,8 +190,8 @@ export class App implements OnInit, AfterViewInit {
     else this.loading.set(false);
   }
 
-  private trySelect(kind: Kind, id: string): boolean {
-    const found = this.items.find(i => i.kind === kind && i.id === id);
+  private trySelect(relationType: RelationType, id: string): boolean {
+    const found = this.items.find(item => item.relationType === relationType && item.id === id);
     if (!found) return false;
     this.selectItem(found);
     return true;
@@ -208,7 +201,7 @@ export class App implements OnInit, AfterViewInit {
     if (!this.selected) return;
     this.load$.next({
       id: this.selected.id,
-      kind: this.selected.kind,
+      kind: this.selected.relationType,
       pageIndex: this.pageIndex,
       pageSize: this.pageSize,
       sortBy: this.sortBy ?? undefined,
@@ -238,7 +231,7 @@ export class App implements OnInit, AfterViewInit {
 
 
   hasKind(kind: 'table' | 'view'): boolean {
-    return this.items.some(item => item.kind === kind);
+    return this.items.some(item => item.relationType === kind);
   }
 
 }
