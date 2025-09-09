@@ -215,21 +215,22 @@ export class App implements OnInit, AfterViewInit {
       sortDir: this.sortBy ? this.sortDir : undefined,
     });
   }
+
   // ---- ui handlers ----
 
-  onPage(e: PageEvent) {
-    this.pageIndex = e.pageIndex;
-    this.pageSize = e.pageSize;
+  onPage(pageEvent: PageEvent) {
+    this.pageIndex = pageEvent.pageIndex;
+    this.pageSize = pageEvent.pageSize;
     this.pushLoad();
   }
 
-  onSort(e: Sort) {
-    if (!e.direction) {
+  onSort(sort: Sort) {
+    if (!sort.direction) {
       this.sortBy = null;
       this.sortDir = 'asc';
     } else {
-      this.sortBy = e.active;
-      this.sortDir = e.direction as 'asc' | 'desc';
+      this.sortBy = sort.active;
+      this.sortDir = sort.direction as 'asc' | 'desc';
     }
     this.pageIndex = 0;
     this.pushLoad();
@@ -237,7 +238,7 @@ export class App implements OnInit, AfterViewInit {
 
 
   hasKind(kind: 'table' | 'view'): boolean {
-    return this.items.some(i => i.kind === kind);
+    return this.items.some(item => item.kind === kind);
   }
 
 }
