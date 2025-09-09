@@ -1,4 +1,3 @@
-// src/app/app.component.ts
 import {Component, computed, inject, OnInit, signal, viewChild} from '@angular/core';
 
 import {MatButtonModule} from '@angular/material/button';
@@ -62,16 +61,15 @@ export class AppComponent implements OnInit {
   }
 
   private loadRows(): void {
-    const sel = this.selectedListItem();
-    if (!sel) return;
+    const listItem = this.selectedListItem();
+    if (!listItem) return;
 
     this.loadRowsSubscription?.unsubscribe();
     this.loading.set(true);
-
     this.loadRowsSubscription = this.dataApiService
       .getRows(
-        sel.relationType,
-        sel.id,
+        listItem.relationType,
+        listItem.id,
         this.pageIndex(),
         this.pageSize(),
         this.sortBy() ?? undefined,
@@ -84,7 +82,6 @@ export class AppComponent implements OnInit {
           this.totalCount.set(result.totalCount);
         },
         error: () => {
-          // fallback on error
           this.rows.set([]);
           this.totalCount.set(0);
         },
@@ -114,7 +111,6 @@ export class AppComponent implements OnInit {
         this.selectFirstAvailable(); // kick off loading
       },
       error: () => {
-        // if either call fails, forkJoin errors—fallback to empty list
         this.listItems.set([]);
         this.loading.set(false);
       },
@@ -124,7 +120,6 @@ export class AppComponent implements OnInit {
   private updateColumns(): void {
     const cols = this.selectedListItem()?.columns ?? [];
     this.columnNames.set(cols);
-    // displayedColumns is computed
   }
 
   private selectFirstAvailable(): void {
@@ -136,14 +131,11 @@ export class AppComponent implements OnInit {
     this.sortBy.set(null);
     this.sortDir.set('asc');
 
-    // Set columns from metadata immediately
     this.updateColumns();
 
     if (first) this.loadRows();
     else this.loading.set(false);
   }
-
-  // ---- UI handlers ----
 
   protected selectItem(item: ListItem): void {
     const sel = this.selectedListItem();
