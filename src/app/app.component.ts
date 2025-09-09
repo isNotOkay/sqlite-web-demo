@@ -1,6 +1,6 @@
-import {Component, inject, OnInit, signal, viewChild, WritableSignal} from '@angular/core';
+import { Component, inject, OnInit, signal, viewChild, WritableSignal } from '@angular/core';
 
-import {MatButtonModule} from '@angular/material/button';
+import { MatButtonModule } from '@angular/material/button';
 import {
   MatCell,
   MatCellDef,
@@ -13,20 +13,20 @@ import {
   MatRowDef,
   MatTable
 } from '@angular/material/table';
-import {MatPaginator, PageEvent} from '@angular/material/paginator';
-import {MatDivider} from '@angular/material/divider';
-import {MatSort, MatSortHeader, Sort} from '@angular/material/sort';
+import { MatPaginator, PageEvent } from '@angular/material/paginator';
+import { MatDivider } from '@angular/material/divider';
+import { MatSort, MatSortHeader, Sort } from '@angular/material/sort';
 
-import {forkJoin, of, Subject} from 'rxjs';
-import {catchError, distinctUntilChanged, switchMap, tap} from 'rxjs/operators';
+import { forkJoin, of, Subject } from 'rxjs';
+import { catchError, distinctUntilChanged, switchMap, tap } from 'rxjs/operators';
 
-import {DataApiService} from './services/data-api.service';
-import {LoadingIndicator} from './components/loading-indicator/loading-indicator';
+import { DataApiService } from './services/data-api.service';
+import { LoadingIndicator } from './components/loading-indicator/loading-indicator';
 
 import * as _ from 'underscore';
-import {RelationType} from './enums/relation-type.enum';
-import {ListItem} from './models/list-item.model';
-import {LoadParams} from './models/load-params.model';
+import { RelationType } from './enums/relation-type.enum';
+import { ListItem } from './models/list-item.model';
+import { LoadParams } from './models/load-params.model';
 
 @Component({
   selector: 'app-root',
@@ -43,7 +43,10 @@ import {LoadParams} from './models/load-params.model';
 })
 export class AppComponent implements OnInit {
   protected loading: WritableSignal<boolean> = signal(true);
-  protected listItems: ListItem[] = [];
+
+  // CHANGED: keep UI-bound list as a signal so change detection runs
+  protected listItems = signal<ListItem[]>([]);
+
   protected selectedListItem: ListItem | null = null;
   protected columnNames: string[] = [];
   protected displayedColumns: string[] = [];
@@ -58,14 +61,13 @@ export class AppComponent implements OnInit {
   private readonly dataApiService = inject(DataApiService);
   private readonly load$ = new Subject<LoadParams>();
 
-
   ngOnInit(): void {
 
-    // Fetch tables + views, then build flat list
+    // Fetch tables + views, then build flat list (use per-stream fallbacks)
     forkJoin({
       tables: this.dataApiService.listTables().pipe(catchError(() => of([]))),
-      views: this.dataApiService.listViews().pipe(catchError(() => of([]))),
-    }).subscribe(({tables, views}) => {
+      views:  this.dataApiService.listViews().pipe(catchError(() => of([]))),
+    }).subscribe(({ tables, views }) => {
       const tableItems: ListItem[] = (tables ?? []).map(t => ({
         id: t.name,
         label: t.name,
@@ -76,8 +78,10 @@ export class AppComponent implements OnInit {
         label: v.name,
         relationType: RelationType.View as const,
       }));
+      this.listItems.set([...tableItems, ...viewItems]);
 
-      this.listItems = [...tableItems, ...viewItems];
+      // auto-select first available to kick off loading
+      this.selectFirstAvailable();
     });
 
     // Data loading pipeline
@@ -92,12 +96,13 @@ export class AppComponent implements OnInit {
           (a.sortDir ?? 'asc') === (b.sortDir ?? 'asc')
         ),
         tap(() => this.loading.set(true)),
-        switchMap(({id, relationType, pageIndex, pageSize, sortBy, sortDir}) =>
-          this.dataApiService.getRows(relationType, id, pageIndex, pageSize, sortBy, sortDir ?? 'asc')
-            .pipe(catchError(() => of({items: [], total: 0})))
+        switchMap(({ id, relationType, pageIndex, pageSize, sortBy, sortDir }) =>
+          this.dataApiService
+            .getRows(relationType, id, pageIndex, pageSize, sortBy, sortDir ?? 'asc')
+            .pipe(catchError(() => of({ items: [], total: 0 })))
         )
       )
-      .subscribe(({items, total}) => {
+      .subscribe(({ items, total }) => {
         this.rows = items;
         this.total = total;
 
@@ -123,7 +128,6 @@ export class AppComponent implements OnInit {
         this.loading.set(false);
       });
   }
-
 
   protected selectItem(item: ListItem): void {
     if (this.selectedListItem?.id === item.id && this.selectedListItem?.relationType === item.relationType) return;
@@ -169,11 +173,12 @@ export class AppComponent implements OnInit {
   }
 
   protected hasRelationType(relationType: RelationType): boolean {
-    return this.listItems.some(item => item.relationType === relationType);
+    return this.listItems().some(item => item.relationType === relationType);
   }
 
   private selectFirstAvailable(): void {
-    this.selectedListItem = this.listItems[0] ?? null;
+    const items = this.listItems();
+    this.selectedListItem = items[0] ?? null;
     this.pageIndex = 0;
     this.sortBy = null;
     this.sortDir = 'asc';
@@ -182,7 +187,7 @@ export class AppComponent implements OnInit {
   }
 
   private trySelect(relationType: RelationType, id: string): boolean {
-    const found = this.listItems.find(item => item.relationType === relationType && item.id === id);
+    const found = this.listItems().find(item => item.relationType === relationType && item.id === id);
     if (!found) return false;
     this.selectItem(found);
     return true;
