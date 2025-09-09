@@ -1,5 +1,5 @@
 // src/app/app.ts
-import {AfterViewInit, Component, inject, OnInit, signal, ViewChild, WritableSignal} from '@angular/core';
+import {AfterViewInit, Component, inject, OnInit, signal, viewChild, WritableSignal} from '@angular/core';
 
 import {MatButtonModule} from '@angular/material/button';
 import {
@@ -55,9 +55,7 @@ export class App implements OnInit, AfterViewInit {
   protected pageSize = 50;
   protected sortBy: string | null = null;
   protected sortDir: 'asc' | 'desc' = 'asc';
-
-  @ViewChild(MatPaginator, {static: true}) protected paginator!: MatPaginator;
-  @ViewChild(MatSort, {static: true}) protected sort!: MatSort;
+  protected sort = viewChild.required(MatSort);
 
   // ---------- internal services/streams (private) ----------
   private readonly api = inject(DataApiService);
@@ -166,8 +164,11 @@ export class App implements OnInit, AfterViewInit {
     // reset sorting when switching objects
     this.sortBy = null;
     this.sortDir = 'asc';
-    if (this.sort) this.sort.active = this.sort.direction = '' as any;
-
+    const sort = this.sort();
+    if (sort) {
+      sort.active = '' as any;
+      sort.direction = '' as any;
+    }
     this.pushLoad();
   }
 
