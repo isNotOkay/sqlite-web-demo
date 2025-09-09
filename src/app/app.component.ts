@@ -17,7 +17,7 @@ import {MatPaginator, PageEvent} from '@angular/material/paginator';
 import {MatDivider} from '@angular/material/divider';
 import {MatSort, MatSortHeader, Sort} from '@angular/material/sort';
 
-import {forkJoin} from 'rxjs';
+import {finalize, forkJoin} from 'rxjs';
 
 import {DataApiService} from './services/data-api.service';
 import {LoadingIndicator} from './components/loading-indicator/loading-indicator';
@@ -68,6 +68,7 @@ export class AppComponent implements OnInit {
       this.loading.set(true);
       this.dataApiService
         .getRows(this.selectedListItem.relationType, this.selectedListItem.id, this.pageIndex, this.pageSize, this.sortBy ?? undefined, this.sortDir ?? 'asc')
+        .pipe(finalize(() => this.loading.set(false)))
         .subscribe({
           next: (result) => {
             this.rows = result.items;
@@ -92,7 +93,6 @@ export class AppComponent implements OnInit {
             }
             this.columnNames = keys;
             this.displayedColumns = [...this.columnNames];
-            this.loading.set(false);
           },
           error: () => {
             // fallback on error
@@ -100,7 +100,6 @@ export class AppComponent implements OnInit {
             this.total = 0;
             this.columnNames = [];
             this.displayedColumns = [];
-            this.loading.set(false);
           },
         });
     }
