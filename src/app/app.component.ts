@@ -80,7 +80,6 @@ export class AppComponent implements OnInit {
           next: (result) => {
             this.rows = result.items;
             this.totalCount = result.totalCount;
-            // Column order is controlled by selection (from backend metadata).
           },
           error: () => {
             this.rows = [];
