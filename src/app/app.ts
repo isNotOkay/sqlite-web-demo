@@ -1,3 +1,4 @@
+// src/app/app.ts
 import {AfterViewInit, Component, inject, OnInit, signal, ViewChild, WritableSignal} from '@angular/core';
 
 import {MatButtonModule} from '@angular/material/button';
@@ -29,7 +30,6 @@ import {RelationType} from './enums/relation-type.enum';
 import {ListItem} from './models/list-item.model';
 import {LoadParams} from './models/load-params.model';
 
-
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -45,22 +45,21 @@ import {LoadParams} from './models/load-params.model';
 })
 export class App implements OnInit, AfterViewInit {
   protected loading: WritableSignal<boolean> = signal(true);
+  protected items: ListItem[] = [];               // flat list of tables + views
+  protected selected: ListItem | null = null;     // current selection
+  protected columns: string[] = [];
+  protected displayedColumns: string[] = [];
+  protected rows: Record<string, unknown>[] = [];
+  protected total = 0;
+  protected pageIndex = 0;
+  protected pageSize = 50;
+  protected sortBy: string | null = null;
+  protected sortDir: 'asc' | 'desc' = 'asc';
 
-  items: ListItem[] = [];              // flat list of tables + views
-  selected: ListItem | null = null;    // current selection
+  @ViewChild(MatPaginator, {static: true}) protected paginator!: MatPaginator;
+  @ViewChild(MatSort, {static: true}) protected sort!: MatSort;
 
-  columns: string[] = [];
-  displayedColumns: string[] = [];
-  rows: Record<string, unknown>[] = [];
-  total = 0;
-  pageIndex = 0;
-  pageSize = 50;
-  sortBy: string | null = null;
-  sortDir: 'asc' | 'desc' = 'asc';
-
-  @ViewChild(MatPaginator, {static: true}) paginator!: MatPaginator;
-  @ViewChild(MatSort, {static: true}) sort!: MatSort;
-
+  // ---------- internal services/streams (private) ----------
   private readonly api = inject(DataApiService);
   private readonly realtime = inject(RealtimeService);
   private readonly load$ = new Subject<LoadParams>();
@@ -68,11 +67,12 @@ export class App implements OnInit, AfterViewInit {
   // if a remote selection lands before items are loaded
   private pendingSelection: RemoteSelection | null = null;
 
+  // ---------- lifecycle ----------
   ngOnInit(): void {
-    // start SignalR
+    // Start SignalR
     this.realtime.start().catch(err => console.error('SignalR start error', err));
 
-    // fetch tables + views, then build flat list
+    // Fetch tables + views, then build flat list
     forkJoin({
       tables: this.api.listTables().pipe(catchError(() => of([]))),
       views: this.api.listViews().pipe(catchError(() => of([]))),
@@ -80,20 +80,17 @@ export class App implements OnInit, AfterViewInit {
       const tableItems: ListItem[] = (tables ?? []).map(t => ({
         id: t.name,
         label: t.name,
-        relationType: RelationType.Table as const
+        relationType: RelationType.Table as const,
       }));
       const viewItems: ListItem[] = (views ?? []).map(v => ({
         id: v.name,
         label: v.name,
-        relationType: RelationType.View as const
+        relationType: RelationType.View as const,
       }));
 
-      this.items = [
-        ...tableItems,
-        ...viewItems,
-      ];
+      this.items = [...tableItems, ...viewItems];
 
-      // select something
+      // Apply pending remote selection or pick first available
       if (this.pendingSelection) {
         const {relationType, id} = this.pendingSelection;
         this.pendingSelection = null;
@@ -103,7 +100,7 @@ export class App implements OnInit, AfterViewInit {
       }
     });
 
-    // load pipeline
+    // Data loading pipeline
     this.load$
       .pipe(
         distinctUntilChanged((a, b) =>
@@ -124,7 +121,7 @@ export class App implements OnInit, AfterViewInit {
         this.rows = items;
         this.total = total;
 
-        // infer columns (stable order)
+        // Infer columns (stable order)
         const keys: string[] = [];
         const seen = new Set<string>();
         if (this.rows.length) {
@@ -132,9 +129,13 @@ export class App implements OnInit, AfterViewInit {
             seen.add(k);
             keys.push(k);
           }
-          for (const r of this.rows) for (const k of Object.keys(r)) if (!seen.has(k)) {
-            seen.add(k);
-            keys.push(k);
+          for (const r of this.rows) {
+            for (const k of Object.keys(r)) {
+              if (!seen.has(k)) {
+                seen.add(k);
+                keys.push(k);
+              }
+            }
           }
         }
         this.columns = keys;
@@ -155,8 +156,8 @@ export class App implements OnInit, AfterViewInit {
     });
   }
 
-  // ---- selection + load ----
-  selectItem(item: ListItem) {
+  // ---------- template-facing methods (protected) ----------
+  protected selectItem(item: ListItem): void {
     if (this.selected?.id === item.id && this.selected?.relationType === item.relationType) return;
 
     this.selected = item;
@@ -170,18 +171,50 @@ export class App implements OnInit, AfterViewInit {
     this.pushLoad();
   }
 
-
-  protected isNumericColumn(column: string): boolean {
+  protected isNumericColumn(columnName: string): boolean {
     for (const row of this.rows) {
-      const value = (row as any)[column];
-      if (value != null && value !== '') {
-        return _.isNumber(value) || (_.isString(value) && _.isNumber(Number(value)));
+      const cellValue = (row as any)[columnName];
+
+      // skip empty values
+      if (cellValue == null || cellValue === '') {
+        continue;
       }
+
+      // treat numbers and numeric strings as numeric (per your request)
+      if (_.isNumber(cellValue)) return true;
+      if (_.isString(cellValue) && _.isNumber(Number(cellValue))) return true;
+
+      // first non-empty sample is not numeric
+      return false;
     }
+    // no non-empty values found
     return false;
   }
 
-  private selectFirstAvailable() {
+  protected onPage(pageEvent: PageEvent): void {
+    this.pageIndex = pageEvent.pageIndex;
+    this.pageSize = pageEvent.pageSize;
+    this.pushLoad();
+  }
+
+  protected onSort(sort: Sort): void {
+    if (!sort.direction) {
+      this.sortBy = null;
+      this.sortDir = 'asc';
+    } else {
+      this.sortBy = sort.active;
+      this.sortDir = sort.direction as 'asc' | 'desc';
+    }
+    this.pageIndex = 0;
+    this.pushLoad();
+  }
+
+  protected hasKind(kind: 'table' | 'view'): boolean {
+    return this.items.some(item => item.relationType === kind);
+  }
+
+  // ---------- internal helpers (private) ----------
+  private selectFirstAvailable(): void {
     this.selected = this.items[0] ?? null;
     this.pageIndex = 0;
     this.sortBy = null;
@@ -197,7 +230,7 @@ export class App implements OnInit, AfterViewInit {
     return true;
   }
 
-  private pushLoad() {
+  private pushLoad(): void {
     if (!this.selected) return;
     this.load$.next({
       id: this.selected.id,
@@ -208,30 +241,4 @@ export class App implements OnInit, AfterViewInit {
       sortDir: this.sortBy ? this.sortDir : undefined,
     });
   }
-
-  // ---- ui handlers ----
-
-  onPage(pageEvent: PageEvent) {
-    this.pageIndex = pageEvent.pageIndex;
-    this.pageSize = pageEvent.pageSize;
-    this.pushLoad();
-  }
-
-  onSort(sort: Sort) {
-    if (!sort.direction) {
-      this.sortBy = null;
-      this.sortDir = 'asc';
-    } else {
-      this.sortBy = sort.active;
-      this.sortDir = sort.direction as 'asc' | 'desc';
-    }
-    this.pageIndex = 0;
-    this.pushLoad();
-  }
-
-
-  hasKind(kind: 'table' | 'view'): boolean {
-    return this.items.some(item => item.relationType === kind);
-  }
-
 }
