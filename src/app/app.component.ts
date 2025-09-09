@@ -18,7 +18,7 @@ import {MatDivider} from '@angular/material/divider';
 import {MatSort, MatSortHeader, Sort} from '@angular/material/sort';
 
 import {forkJoin, of, Subject} from 'rxjs';
-import {catchError, distinctUntilChanged, switchMap, tap} from 'rxjs/operators';
+import {catchError, switchMap, tap} from 'rxjs/operators';
 
 import {DataApiService} from './services/data-api.service';
 import {LoadingIndicator} from './components/loading-indicator/loading-indicator';
@@ -84,17 +84,8 @@ export class AppComponent implements OnInit {
       this.selectFirstAvailable();
     });
 
-    // Data loading pipeline
     this.load$
       .pipe(
-        distinctUntilChanged((a, b) =>
-          a.id === b.id &&
-          a.relationType === b.relationType &&
-          a.pageIndex === b.pageIndex &&
-          a.pageSize === b.pageSize &&
-          (a.sortBy ?? null) === (b.sortBy ?? null) &&
-          (a.sortDir ?? 'asc') === (b.sortDir ?? 'asc')
-        ),
         tap(() => this.loading.set(true)),
         switchMap(({id, relationType, pageIndex, pageSize, sortBy, sortDir}) =>
           this.dataApiService
