@@ -1,48 +1,36 @@
-// src/app/app.ts
 import { Component, inject, OnInit, signal, ViewChild, WritableSignal, AfterViewInit } from '@angular/core';
 
 import { MatButtonModule } from '@angular/material/button';
 import {
-  MatCell,
-  MatCellDef,
-  MatColumnDef,
-  MatHeaderCell,
-  MatHeaderCellDef,
-  MatHeaderRow,
-  MatHeaderRowDef,
-  MatRow,
-  MatRowDef,
-  MatTable
+  MatCell, MatCellDef, MatColumnDef, MatHeaderCell, MatHeaderCellDef,
+  MatHeaderRow, MatHeaderRowDef, MatRow, MatRowDef, MatTable
 } from '@angular/material/table';
 import { MatPaginator, PageEvent } from '@angular/material/paginator';
-
-import { DataApiService } from './services/data-api.service';
-import { GridRow } from './models/grid';
+import { MatDivider } from '@angular/material/divider';
+import { MatSort, MatSortHeader, Sort } from '@angular/material/sort';
 
 import { forkJoin, of, Subject } from 'rxjs';
 import { catchError, distinctUntilChanged, switchMap, tap } from 'rxjs/operators';
-import { LoadingIndicator } from './components/loading-indicator/loading-indicator';
-import { MatDivider } from '@angular/material/divider';
 
-// NEW: material sort
-import { MatSort, MatSortHeader, Sort } from '@angular/material/sort';
+import { DataApiService } from './services/data-api.service';
+import { GridRow } from './models/grid';
+import { LoadingIndicator } from './components/loading-indicator/loading-indicator';
 import { RealtimeService, RemoteSelection } from './services/realtime.service';
 
-interface NavNode {
-  id?: string;
-  kind?: 'table' | 'view';
-  name: string;
-  children?: NavNode[];
-  placeholder?: boolean;
+type Kind = 'table' | 'view';
+
+interface ListItem {
+  id: string;           // object name (e.g., "Users", "Orders")
+  kind: Kind;           // 'table' | 'view'
+  label: string;        // what we render in the sidebar
 }
 
-// add sorting into load params
 type LoadParams = {
   id: string;
-  kind: 'table' | 'view';
+  kind: Kind;
   pageIndex: number;
   pageSize: number;
-  sortBy?: string | null;
+  sortBy?: string;
   sortDir?: 'asc' | 'desc';
 };
 
@@ -61,16 +49,9 @@ type LoadParams = {
 })
 export class App implements OnInit, AfterViewInit {
   protected loading: WritableSignal<boolean> = signal(true);
-  private readonly realtime = inject(RealtimeService);
 
-  treeData: NavNode[] = [
-    { name: 'Tables', children: [] },
-    { name: 'Views',  children: [] },
-  ];
-  selectedNode: NavNode | null = null;
-
-  isSelectable = (node: NavNode) => !!node.id && !node.placeholder;
-  isSelected = (node: NavNode) => this.selectedNode === node;
+  items: ListItem[] = [];              // flat list of tables + views
+  selected: ListItem | null = null;    // current selection
 
   columns: string[] = [];
   displayedColumns: string[] = [];
@@ -85,42 +66,40 @@ export class App implements OnInit, AfterViewInit {
   @ViewChild(MatSort, { static: true }) sort!: MatSort;
 
   private readonly api = inject(DataApiService);
+  private readonly realtime = inject(RealtimeService);
   private readonly load$ = new Subject<LoadParams>();
 
-  // NEW: hold incoming selection if it arrives before nav data is ready
+  // if a remote selection lands before items are loaded
   private pendingSelection: RemoteSelection | null = null;
 
   ngOnInit(): void {
-    // Start SignalR connection
-    this.realtime.start().catch((err) => console.error('SignalR start error', err));
+    // start SignalR
+    this.realtime.start().catch(err => console.error('SignalR start error', err));
 
-    // Build the sections from API.
+    // fetch tables + views, then build flat list
     forkJoin({
       tables: this.api.listTables().pipe(catchError(() => of([]))),
       views:  this.api.listViews().pipe(catchError(() => of([]))),
     }).subscribe(({ tables, views }) => {
-      let tableLeaves: NavNode[] = (tables ?? []).map(t => ({ id: t.name, name: t.name, kind: 'table' as const }));
-      let viewLeaves:  NavNode[] = (views  ?? []).map(v => ({ id: v.name, name: v.name, kind: 'view'  as const }));
+      const tableItems: ListItem[] = (tables ?? []).map(t => ({ id: t.name, label: t.name, kind: 'table' as const }));
+      const viewItems:  ListItem[] = (views  ?? []).map(v => ({ id: v.name, label: v.name, kind: 'view'  as const }));
 
-      if (tableLeaves.length === 0) tableLeaves = [{ name: 'No tables found', placeholder: true }];
-      if (viewLeaves.length === 0)  viewLeaves  = [{ name: 'No views found',  placeholder: true }];
-
-      this.treeData = [
-        { name: 'Tables', children: tableLeaves },
-        { name: 'Views',  children: viewLeaves  },
+      this.items = [
+        ...tableItems,
+        ...viewItems,
       ];
 
-      // If a remote selection already arrived, honor it now; otherwise select default.
+      // select something
       if (this.pendingSelection) {
         const { kind, id } = this.pendingSelection;
         this.pendingSelection = null;
-        if (!this.trySelect(kind, id)) this.selectDefault();
+        if (!this.trySelect(kind, id)) this.selectFirstAvailable();
       } else {
-        this.selectDefault();
+        this.selectFirstAvailable();
       }
     });
 
-    // Data loading pipeline
+    // load pipeline
     this.load$
       .pipe(
         distinctUntilChanged((a, b) =>
@@ -133,19 +112,18 @@ export class App implements OnInit, AfterViewInit {
         ),
         tap(() => this.loading.set(true)),
         switchMap(({ id, kind, pageIndex, pageSize, sortBy, sortDir }) =>
-          this.api.getRows(kind, id, pageIndex, pageSize, sortBy ?? undefined, sortDir ?? 'asc').pipe(
-            catchError(() => of({ items: [], total: 0 }))
-          )
+          this.api.getRows(kind, id, pageIndex, pageSize, sortBy, sortDir ?? 'asc')
+            .pipe(catchError(() => of({ items: [], total: 0 })))
         )
       )
       .subscribe(({ items, total }) => {
         this.rows = items;
         this.total = total;
 
-        // Infer columns from current page (keeps order stable)
+        // infer columns (stable order)
         const keys: string[] = [];
         const seen = new Set<string>();
-        if (this.rows.length > 0) {
+        if (this.rows.length) {
           for (const k of Object.keys(this.rows[0]!)) { seen.add(k); keys.push(k); }
           for (const r of this.rows) for (const k of Object.keys(r)) if (!seen.has(k)) { seen.add(k); keys.push(k); }
         }
@@ -155,34 +133,26 @@ export class App implements OnInit, AfterViewInit {
       });
   }
 
-  // Start listening to server-driven selection after initial render
   ngAfterViewInit(): void {
     this.realtime.selection$.subscribe(sel => {
-      const hasData =
-        (this.treeData?.[0]?.children?.length ?? 0) > 0 ||
-        (this.treeData?.[1]?.children?.length ?? 0) > 0;
-
-      if (!hasData) {
-        // nav not ready yet -> queue it
+      if (!this.items.length) {
         this.pendingSelection = sel;
         return;
       }
-
       if (!this.trySelect(sel.kind, sel.id)) {
         console.warn('Remote selection not found:', sel);
       }
     });
   }
 
-  // ---- UI handlers ----
-  selectNode(node: NavNode) {
-    if (!this.isSelectable(node)) return;
-    if (this.selectedNode === node) return;
+  // ---- selection + load ----
+  selectItem(item: ListItem) {
+    if (this.selected?.id === item.id && this.selected?.kind === item.kind) return;
 
-    this.selectedNode = node;
+    this.selected = item;
     this.pageIndex = 0;
 
-    // reset sort when switching objects
+    // reset sorting when switching objects
     this.sortBy = null;
     this.sortDir = 'asc';
     if (this.sort) this.sort.active = this.sort.direction = '' as any;
@@ -190,15 +160,42 @@ export class App implements OnInit, AfterViewInit {
     this.pushLoad();
   }
 
+  private selectFirstAvailable() {
+    this.selected = this.items[0] ?? null;
+    this.pageIndex = 0;
+    this.sortBy = null;
+    this.sortDir = 'asc';
+    if (this.selected) this.pushLoad();
+    else this.loading.set(false);
+  }
+
+  private trySelect(kind: Kind, id: string): boolean {
+    const found = this.items.find(i => i.kind === kind && i.id === id);
+    if (!found) return false;
+    this.selectItem(found);
+    return true;
+  }
+
+  private pushLoad() {
+    if (!this.selected) return;
+    this.load$.next({
+      id: this.selected.id,
+      kind: this.selected.kind,
+      pageIndex: this.pageIndex,
+      pageSize: this.pageSize,
+      sortBy: this.sortBy ?? undefined,
+      sortDir: this.sortBy ? this.sortDir : undefined,
+    });
+  }
+
+  // ---- ui handlers ----
   onPage(e: PageEvent) {
     this.pageIndex = e.pageIndex;
     this.pageSize = e.pageSize;
     this.pushLoad();
   }
 
-  // react to header clicks
   onSort(e: Sort) {
-    // Angular Material gives direction '' when cleared
     if (!e.direction) {
       this.sortBy = null;
       this.sortDir = 'asc';
@@ -206,26 +203,11 @@ export class App implements OnInit, AfterViewInit {
       this.sortBy = e.active;
       this.sortDir = e.direction as 'asc' | 'desc';
     }
-    // Reset to first page on sort change
     this.pageIndex = 0;
     this.pushLoad();
   }
 
-  private pushLoad() {
-    const node = this.selectedNode;
-    if (!node?.id || !node?.kind) return;
-
-    this.load$.next({
-      id: node.id,
-      kind: node.kind,
-      pageIndex: this.pageIndex,
-      pageSize: this.pageSize,
-      sortBy: this.sortBy ?? undefined,
-      sortDir: this.sortBy ? this.sortDir : undefined, // only send dir when sorting
-    });
-  }
-
-  // ---------- numeric helpers ----------
+  // ---- numeric helpers (unchanged) ----
   isNumeric(value: unknown): boolean {
     if (value === null || value === undefined) return false;
     if (typeof value === 'number' && isFinite(value)) return true;
@@ -233,51 +215,21 @@ export class App implements OnInit, AfterViewInit {
     if (typeof value === 'string') {
       const s = value.trim();
       if (!s) return false;
-      // Accept integers and decimals (locale-agnostic)
       return !Number.isNaN(Number(s));
     }
     return false;
   }
 
   isNumericColumn(col: string): boolean {
-    // Look for the first non-null sample value in this column
     for (const r of this.rows) {
       const v = (r as any)[col];
-      if (v !== null && v !== undefined && v !== '') {
-        return this.isNumeric(v);
-      }
+      if (v !== null && v !== undefined && v !== '') return this.isNumeric(v);
     }
     return false;
   }
 
-  // ---------- selection helpers (NEW) ----------
-  private selectDefault() {
-    const tables = this.treeData[0]?.children ?? [];
-    const views  = this.treeData[1]?.children ?? [];
-    const firstReal =
-      tables.find(n => !n.placeholder) ??
-      views.find(n => !n.placeholder) ?? null;
-
-    this.selectedNode = firstReal;
-    this.pageIndex = 0;
-    this.sortBy = null;
-    this.sortDir = 'asc';
-    if (this.selectedNode) this.pushLoad();
-    else this.loading.set(false); // nothing to load
+  hasKind(kind: 'table' | 'view'): boolean {
+    return this.items.some(i => i.kind === kind);
   }
 
-  private trySelect(kind: 'table' | 'view', id: string): boolean {
-    const index = kind === 'table' ? 0 : 1;
-    const list = this.treeData[index]?.children ?? [];
-    const node = list.find(n => n.id === id);
-    if (!node) return false;
-
-    this.selectedNode = node;
-    this.pageIndex = 0;
-    this.sortBy = null;
-    this.sortDir = 'asc';
-    if (this.sort) this.sort.active = this.sort.direction = '' as any;
-    this.pushLoad();
-    return true;
-  }
 }

@@ -125,3 +125,13 @@ th.mat-mdc-header-cell.numeric {
   /* keep digits aligned nicely */
   font-variant-numeric: tabular-nums;
 }
+
+/* Optional: subtle placeholder text for empty sections */
+.nav-empty {
+  padding: 6px 16px 6px 25px;
+  color: var(--mat-sys-on-surface-variant);
+  font-style: italic;
+}
+
+/* Mark selectable items explicitly (keeps your :disabled variant intact) */
+.nav-item.selectable { cursor: pointer; }

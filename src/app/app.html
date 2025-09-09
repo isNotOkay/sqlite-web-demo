@@ -1,39 +1,48 @@
 <!-- src/app/app.html -->
 <div class="layout">
-  <!-- LEFT: Static list with sections (restored) -->
+  <!-- LEFT: Static list with sections (flat) -->
   <aside class="sidenav">
     <nav class="nav-list" role="navigation" aria-label="Database objects">
+
+      <!-- Tables -->
       <div class="nav-section" role="group" aria-label="Tables">
         <div class="nav-section-label">Tables</div>
-        @for (node of (treeData[0]?.children ?? []); track node.name) {
-          <button
-            type="button"
-            class="nav-item"
-            [class.selectable]="isSelectable(node)"
-            [class.selected]="isSelected(node)"
-            [attr.aria-current]="isSelected(node) ? 'true' : null"
-            [disabled]="!isSelectable(node)"
-            (click)="selectNode(node)">
-            {{ node.name }}
-          </button>
+        @for (item of items; track item.id) {
+          @if (item.kind === 'table') {
+            <button
+              type="button"
+              class="nav-item selectable"
+              [class.selected]="selected?.id === item.id && selected?.kind === item.kind"
+              [attr.aria-current]="selected?.id === item.id && selected?.kind === item.kind ? 'true' : null"
+              (click)="selectItem(item)">
+              {{ item.label }}
+            </button>
+          }
+        }
+        @if (!hasKind('table')) {
+          <div class="nav-empty">No tables found</div>
         }
       </div>
 
       <mat-divider></mat-divider>
 
+      <!-- Views -->
       <div class="nav-section" role="group" aria-label="Views">
         <div class="nav-section-label">Views</div>
-        @for (node of (treeData[1]?.children ?? []); track node.name) {
-          <button
-            type="button"
-            class="nav-item"
-            [class.selectable]="isSelectable(node)"
-            [class.selected]="isSelected(node)"
-            [attr.aria-current]="isSelected(node) ? 'true' : null"
-            [disabled]="!isSelectable(node)"
-            (click)="selectNode(node)">
-            {{ node.name }}
-          </button>
+        @for (item of items; track item.id) {
+          @if (item.kind === 'view') {
+            <button
+              type="button"
+              class="nav-item selectable"
+              [class.selected]="selected?.id === item.id && selected?.kind === item.kind"
+              [attr.aria-current]="selected?.id === item.id && selected?.kind === item.kind ? 'true' : null"
+              (click)="selectItem(item)">
+              {{ item.label }}
+            </button>
+          }
+        }
+        @if (!hasKind('view')) {
+          <div class="nav-empty">No views found</div>
         }
       </div>
     </nav>
