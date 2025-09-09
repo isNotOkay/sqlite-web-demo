@@ -47,7 +47,7 @@ export class App implements OnInit, AfterViewInit {
   protected loading: WritableSignal<boolean> = signal(true);
   protected items: ListItem[] = [];               // flat list of tables + views
   protected selected: ListItem | null = null;     // current selection
-  protected columns: string[] = [];
+  protected columnNames: string[] = [];
   protected displayedColumns: string[] = [];
   protected rows: Record<string, unknown>[] = [];
   protected total = 0;
@@ -133,8 +133,8 @@ export class App implements OnInit, AfterViewInit {
             }
           }
         }
-        this.columns = keys;
-        this.displayedColumns = [...this.columns];
+        this.columnNames = keys;
+        this.displayedColumns = [...this.columnNames];
         this.loading.set(false);
       });
   }
@@ -169,23 +169,11 @@ export class App implements OnInit, AfterViewInit {
   }
 
   protected isNumericColumn(columnName: string): boolean {
-    for (const row of this.rows) {
-      const cellValue = (row as any)[columnName];
-
-      // skip empty values
-      if (cellValue == null || cellValue === '') {
-        continue;
-      }
-
-      // treat numbers and numeric strings as numeric (per your request)
-      if (_.isNumber(cellValue)) return true;
-      if (_.isString(cellValue) && _.isNumber(Number(cellValue))) return true;
-
-      // first non-empty sample is not numeric
-      return false;
-    }
-    // no non-empty values found
-    return false;
+    const first = this.rows.find(row => {
+      const value = (row as any)[columnName];
+      return value != null && value !== '';
+    });
+    return first ? _.isNumber((first as any)[columnName]) : false;
   }
 
   protected onPage(pageEvent: PageEvent): void {

@@ -60,23 +60,23 @@
         mat-table
         [dataSource]="rows"
         matSort
-        [matSortDisabled]="columns.length === 0"
+        [matSortDisabled]="columnNames.length === 0"
         (matSortChange)="onSort($event)"
       >
-        @for (col of columns; track col) {
-          <ng-container [matColumnDef]="col">
+        @for (columnName of columnNames; track columnName) {
+          <ng-container [matColumnDef]="columnName">
             <th
               mat-header-cell
               *matHeaderCellDef
               sticky
-              mat-sort-header="{{ col }}">
-              {{ col }}
+              mat-sort-header="{{ columnName }}">
+              {{ columnName }}
             </th>
             <td
               mat-cell
               *matCellDef="let row"
-              [class.numeric]="isNumericColumn(col)">
-              {{ row[col] }}
+              [class.numeric]="isNumericColumn(columnName)">
+              {{ row[columnName] }}
             </td>
           </ng-container>
         }
