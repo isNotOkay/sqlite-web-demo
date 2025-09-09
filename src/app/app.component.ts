@@ -88,36 +88,45 @@ export class AppComponent implements OnInit {
       .pipe(
         tap(() => this.loading.set(true)),
         switchMap(({id, relationType, pageIndex, pageSize, sortBy, sortDir}) =>
-          this.dataApiService
-            .getRows(relationType, id, pageIndex, pageSize, sortBy, sortDir ?? 'asc')
-            .pipe(catchError(() => of({items: [], total: 0})))
+          this.dataApiService.getRows(relationType, id, pageIndex, pageSize, sortBy, sortDir ?? 'asc')
         )
       )
-      .subscribe(({items, total}) => {
-        this.rows = items;
-        this.total = total;
+      .subscribe({
+        next: ({items, total}) => {
+          this.rows = items;
+          this.total = total;
 
-        // Infer columns (stable order)
-        const keys: string[] = [];
-        const seen = new Set<string>();
-        if (this.rows.length) {
-          for (const k of Object.keys(this.rows[0]!)) {
-            seen.add(k);
-            keys.push(k);
-          }
-          for (const row of this.rows) {
-            for (const key of Object.keys(row)) {
-              if (!seen.has(key)) {
-                seen.add(key);
-                keys.push(key);
+          // Infer columns (stable order)
+          const keys: string[] = [];
+          const seen = new Set<string>();
+          if (this.rows.length) {
+            for (const k of Object.keys(this.rows[0]!)) {
+              seen.add(k);
+              keys.push(k);
+            }
+            for (const row of this.rows) {
+              for (const key of Object.keys(row)) {
+                if (!seen.has(key)) {
+                  seen.add(key);
+                  keys.push(key);
+                }
               }
             }
           }
-        }
-        this.columnNames = keys;
-        this.displayedColumns = [...this.columnNames];
-        this.loading.set(false);
+          this.columnNames = keys;
+          this.displayedColumns = [...this.columnNames];
+          this.loading.set(false);
+        },
+        error: () => {
+          // fallback on error
+          this.rows = [];
+          this.total = 0;
+          this.columnNames = [];
+          this.displayedColumns = [];
+          this.loading.set(false);
+        },
       });
+
   }
 
   protected selectItem(item: ListItem): void {
