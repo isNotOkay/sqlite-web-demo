@@ -17,7 +17,7 @@ import {MatPaginator, PageEvent} from '@angular/material/paginator';
 import {MatDivider} from '@angular/material/divider';
 import {MatSort, MatSortHeader, Sort} from '@angular/material/sort';
 
-import {finalize, forkJoin} from 'rxjs';
+import {finalize, forkJoin, Subscription} from 'rxjs';
 
 import {DataApiService} from './services/data-api.service';
 import {LoadingIndicator} from './components/loading-indicator/loading-indicator';
@@ -56,6 +56,7 @@ export class AppComponent implements OnInit {
   protected sortDir: 'asc' | 'desc' = 'asc';
   protected sort = viewChild.required(MatSort);
   protected readonly RelationType = RelationType;
+  private loadRowsSubscription?: Subscription;
 
   private readonly dataApiService = inject(DataApiService);
 
@@ -65,8 +66,9 @@ export class AppComponent implements OnInit {
 
   private loadRows(): void {
     if (this.selectedListItem) {
+      this.loadRowsSubscription?.unsubscribe();
       this.loading.set(true);
-      this.dataApiService
+      this.loadRowsSubscription = this.dataApiService
         .getRows(this.selectedListItem.relationType, this.selectedListItem.id, this.pageIndex, this.pageSize, this.sortBy ?? undefined, this.sortDir ?? 'asc')
         .pipe(finalize(() => this.loading.set(false)))
         .subscribe({

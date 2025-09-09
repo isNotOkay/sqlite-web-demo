@@ -1,7 +1,7 @@
 // src/app/services/data-api.service.ts
 import {inject, Injectable} from '@angular/core';
 import {HttpClient, HttpParams, HttpResponse} from '@angular/common/http';
-import {delay, map, Observable} from 'rxjs';
+import {map, Observable} from 'rxjs';
 import {PagedResult} from '../models/paged-result.model';
 
 type TableInfo = { name: string; rowCount?: number; columns?: string[] };
@@ -47,7 +47,6 @@ export class DataApiService {
         observe: 'response'
       })
       .pipe(
-        delay(200),
         map((res: HttpResponse<any>) => {
           const body = res.body ?? {};
           const items: Record<string, unknown>[] = Array.isArray(body.data) ? body.data : [];
