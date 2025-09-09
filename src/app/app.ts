@@ -56,16 +56,11 @@ export class App implements OnInit, AfterViewInit {
   protected sortBy: string | null = null;
   protected sortDir: 'asc' | 'desc' = 'asc';
   protected sort = viewChild.required(MatSort);
-
-  // ---------- internal services/streams (private) ----------
   private readonly api = inject(DataApiService);
   private readonly realtime = inject(RealtimeService);
   private readonly load$ = new Subject<LoadParams>();
-
-  // if a remote selection lands before items are loaded
   private pendingSelection: RemoteSelection | null = null;
 
-  // ---------- lifecycle ----------
   ngOnInit(): void {
     // Start SignalR
     this.realtime.start().catch(err => console.error('SignalR start error', err));
@@ -154,7 +149,6 @@ export class App implements OnInit, AfterViewInit {
     });
   }
 
-  // ---------- template-facing methods (protected) ----------
   protected selectItem(item: ListItem): void {
     if (this.selected?.id === item.id && this.selected?.relationType === item.relationType) return;
 
@@ -214,7 +208,6 @@ export class App implements OnInit, AfterViewInit {
     return this.items.some(item => item.relationType === kind);
   }
 
-  // ---------- internal helpers (private) ----------
   private selectFirstAvailable(): void {
     this.selected = this.items[0] ?? null;
     this.pageIndex = 0;
