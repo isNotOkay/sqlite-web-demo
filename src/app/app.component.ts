@@ -44,11 +44,8 @@ import {NavSectionComponent} from './nav-section/nav-section.component';
 })
 export class AppComponent implements OnInit {
   protected loading = signal(true);
-
-  // Two separate arrays now
   protected tableItems = signal<ListItem[]>([]);
-  protected viewItems  = signal<ListItem[]>([]);
-
+  protected viewItems = signal<ListItem[]>([]);
   protected selectedListItem = signal<ListItem | null>(null);
   protected columnNames = signal<string[]>([]);
   protected rows = signal<Record<string, unknown>[]>([]);
@@ -88,13 +85,6 @@ export class AppComponent implements OnInit {
         next: (result: PagedResult) => {
           this.rows.set(result.items ?? []);
           this.totalCount.set((result.total as number) ?? 0);
-
-          // Keep paginator in sync with server (in case of clamping)
-          const serverPageIndex = Math.max(0, (result.page ?? 1) - 1);
-          if (serverPageIndex !== this.pageIndex()) this.pageIndex.set(serverPageIndex);
-          if (typeof result.pageSize === 'number' && result.pageSize !== this.pageSize()) {
-            this.pageSize.set(result.pageSize);
-          }
         },
         error: () => {
           this.rows.set([]);
@@ -110,7 +100,7 @@ export class AppComponent implements OnInit {
     ]).subscribe({
       next: ([tablesRes, viewsRes]: [PagedResult<Relation>, PagedResult<Relation>]) => {
         const tableItems = this.toListItems(tablesRes?.items ?? [], RelationType.Table);
-        const viewItems  = this.toListItems(viewsRes?.items ?? [], RelationType.View);
+        const viewItems = this.toListItems(viewsRes?.items ?? [], RelationType.View);
 
         this.tableItems.set(tableItems);
         this.viewItems.set(viewItems);
