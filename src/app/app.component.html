@@ -1,7 +1,7 @@
 <div class="layout">
   <aside class="sidenav">
     <nav class="nav-list" role="navigation">
-      @if (loadedTablesAndViews) {
+      @if (loadedTablesAndViews()) {
         <app-nav-section
           label="Tables"
           emptyText="No tables found"
