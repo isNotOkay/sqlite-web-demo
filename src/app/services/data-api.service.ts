@@ -1,11 +1,11 @@
 import {inject, Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {Observable} from 'rxjs';
-import {PagedResult} from '../models/paged-result.model';
-import {Relation} from '../models/relation.model';
+import {PagedResultApiModel} from '../models/api/paged-result.model';
+import {RelationApiModel} from '../models/api/relation.model';
 import {RelationType} from '../enums/relation-type.enum';
 import {DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE} from '../constants/api-params.constants';
-import {Row} from '../models/row.model';
+import {RowModel} from '../models/row.model';
 
 @Injectable({providedIn: 'root'})
 export class DataApiService {
@@ -17,9 +17,9 @@ export class DataApiService {
     pageSize = DEFAULT_PAGE_SIZE,
     sortBy: string | null = 'name',
     sortDir: 'asc' | 'desc' = 'asc'
-  ): Observable<PagedResult<Relation>> {
+  ): Observable<PagedResultApiModel<RelationApiModel>> {
     const params = this.buildParams(pageIndex, pageSize, sortBy, sortDir);
-    return this.http.get<PagedResult<Relation>>(`${this.baseUrl}/api/tables`, {params});
+    return this.http.get<PagedResultApiModel<RelationApiModel>>(`${this.baseUrl}/api/tables`, {params});
   }
 
   loadViews(
@@ -27,9 +27,9 @@ export class DataApiService {
     pageSize = DEFAULT_PAGE_SIZE,
     sortBy: string | null = 'name',
     sortDir: 'asc' | 'desc' = 'asc'
-  ): Observable<PagedResult<Relation>> {
+  ): Observable<PagedResultApiModel<RelationApiModel>> {
     const params = this.buildParams(pageIndex, pageSize, sortBy, sortDir);
-    return this.http.get<PagedResult<Relation>>(`${this.baseUrl}/api/views`, {params});
+    return this.http.get<PagedResultApiModel<RelationApiModel>>(`${this.baseUrl}/api/views`, {params});
   }
 
   loadRows(
@@ -39,10 +39,10 @@ export class DataApiService {
     pageSize: number,
     sortBy?: string | null,
     sortDir: 'asc' | 'desc' = 'asc'
-  ): Observable<PagedResult<Row>> {
+  ): Observable<PagedResultApiModel<RowModel>> {
     const params = this.buildParams(pageIndex, pageSize, sortBy ?? null, sortDir);
     const path = relationType === RelationType.Table ? 'tables' : 'views';
-    return this.http.get<PagedResult<Row>>(
+    return this.http.get<PagedResultApiModel<RowModel>>(
       `${this.baseUrl}/api/${path}/${encodeURIComponent(id)}`,
       {params}
     );

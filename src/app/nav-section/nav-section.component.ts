@@ -1,6 +1,6 @@
 import {Component, input, output} from '@angular/core';
 import {MatButtonModule} from '@angular/material/button';
-import {ListItem} from '../models/list-item.model';
+import {ListItemModel} from '../models/list-item.model';
 
 @Component({
   selector: 'app-nav-section',
@@ -12,10 +12,10 @@ import {ListItem} from '../models/list-item.model';
 export class NavSectionComponent {
   // Inputs (signals)
   label = input.required<string>();
-  items = input<ListItem[]>([]);
-  selected = input<ListItem | null>(null);
+  items = input<ListItemModel[]>([]);
+  selected = input<ListItemModel | null>(null);
   emptyText = input('No items');
 
   // Output (signal)
-  select = output<ListItem>();
+  select = output<ListItemModel>();
 }

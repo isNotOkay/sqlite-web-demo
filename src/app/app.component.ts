@@ -24,12 +24,12 @@ import {LoadingIndicator} from './components/loading-indicator/loading-indicator
 
 import * as _ from 'underscore';
 import {RelationType} from './enums/relation-type.enum';
-import {ListItem} from './models/list-item.model';
-import {Relation} from './models/relation.model';
-import {PagedResult} from './models/paged-result.model';
+import {ListItemModel} from './models/list-item.model';
+import {RelationApiModel} from './models/api/relation.model';
+import {PagedResultApiModel} from './models/api/paged-result.model';
 import {NavSectionComponent} from './nav-section/nav-section.component';
 import {DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE} from './constants/api-params.constants';
-import {Row} from './models/row.model';
+import {RowModel} from './models/row.model';
 
 @Component({
   selector: 'app-root',
@@ -46,9 +46,9 @@ import {Row} from './models/row.model';
 })
 export class AppComponent implements OnInit {
   protected loading = signal(true);
-  protected tableItems = signal<ListItem[]>([]);
-  protected viewItems = signal<ListItem[]>([]);
-  protected selectedListItem = signal<ListItem | null>(null);
+  protected tableItems = signal<ListItemModel[]>([]);
+  protected viewItems = signal<ListItemModel[]>([]);
+  protected selectedListItem = signal<ListItemModel | null>(null);
   protected columnNames = signal<string[]>([]);
   protected rows = signal<Record<string, unknown>[]>([]);
   protected totalCount = signal(0);
@@ -82,7 +82,7 @@ export class AppComponent implements OnInit {
       )
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: (result: PagedResult<Row>) => {
+        next: (result: PagedResultApiModel<RowModel>) => {
           this.rows.set(result.items ?? []);
           this.totalCount.set((result.total as number) ?? 0);
         },
@@ -98,7 +98,7 @@ export class AppComponent implements OnInit {
       this.dataApiService.loadTables(),
       this.dataApiService.loadViews(),
     ]).subscribe({
-      next: ([tablesRes, viewsRes]: [PagedResult<Relation>, PagedResult<Relation>]) => {
+      next: ([tablesRes, viewsRes]: [PagedResultApiModel<RelationApiModel>, PagedResultApiModel<RelationApiModel>]) => {
         const tableItems = this.toListItems(tablesRes?.items ?? [], RelationType.Table);
         const viewItems = this.toListItems(viewsRes?.items ?? [], RelationType.View);
 
@@ -115,7 +115,7 @@ export class AppComponent implements OnInit {
     });
   }
 
-  private toListItems(relations: Relation[] | null | undefined, type: RelationType): ListItem[] {
+  private toListItems(relations: RelationApiModel[] | null | undefined, type: RelationType): ListItemModel[] {
     return (relations ?? []).map(relation => ({
       id: relation.name,
       label: relation.name,
@@ -143,7 +143,7 @@ export class AppComponent implements OnInit {
     else this.loading.set(false);
   }
 
-  protected selectListItem(item: ListItem): void {
+  protected selectListItem(item: ListItemModel): void {
     const selectedItem = this.selectedListItem();
     if (selectedItem?.id === item.id && selectedItem?.relationType === item.relationType) return;
 
