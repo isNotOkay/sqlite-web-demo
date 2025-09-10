@@ -14,7 +14,7 @@ export class DataApiService {
   listTables(
     pageIndex = 0,
     pageSize = 50,
-    sortBy: string | null = 'Name',
+    sortBy: string | null = 'name',
     sortDir: 'asc' | 'desc' = 'asc'
   ): Observable<PagedResult<Relation>> {
     const params = this.buildParams(pageIndex, pageSize, sortBy, sortDir);
@@ -24,7 +24,7 @@ export class DataApiService {
   listViews(
     pageIndex = 0,
     pageSize = 50,
-    sortBy: string | null = 'Name',
+    sortBy: string | null = 'name',
     sortDir: 'asc' | 'desc' = 'asc'
   ): Observable<PagedResult<Relation>> {
     const params = this.buildParams(pageIndex, pageSize, sortBy, sortDir);
