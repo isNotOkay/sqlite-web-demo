@@ -28,6 +28,7 @@ import {ListItem} from './models/list-item.model';
 import {Relation} from './models/relation.model';
 import {PagedResult} from './models/paged-result.model';
 import {NavSectionComponent} from './nav-section/nav-section.component';
+import {DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE} from './constants/api-params.constants';
 
 @Component({
   selector: 'app-root',
@@ -50,8 +51,8 @@ export class AppComponent implements OnInit {
   protected columnNames = signal<string[]>([]);
   protected rows = signal<Record<string, unknown>[]>([]);
   protected totalCount = signal(0);
-  protected pageIndex = signal(0);
-  protected pageSize = signal(50);
+  protected pageIndex = signal(DEFAULT_PAGE_INDEX);
+  protected pageSize = signal(DEFAULT_PAGE_SIZE);
   protected sortBy = signal<string | null>(null);
   protected sortDir = signal<'asc' | 'desc'>('asc');
   protected sort = viewChild.required(MatSort);

@@ -4,17 +4,16 @@ import {Observable} from 'rxjs';
 import {PagedResult} from '../models/paged-result.model';
 import {Relation} from '../models/relation.model';
 import {RelationType} from '../enums/relation-type.enum';
+import {DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE} from '../constants/api-params.constants';
 
 @Injectable({providedIn: 'root'})
 export class DataApiService {
   private http = inject(HttpClient);
   private readonly baseUrl = 'http://localhost:5282';
-  private readonly defaultPageIndex = 0;
-  private readonly defaultPageSize = 50;
 
   loadTables(
-    pageIndex = this.defaultPageIndex,
-    pageSize = this.defaultPageSize,
+    pageIndex = DEFAULT_PAGE_INDEX,
+    pageSize = DEFAULT_PAGE_SIZE,
     sortBy: string | null = 'name',
     sortDir: 'asc' | 'desc' = 'asc'
   ): Observable<PagedResult<Relation>> {
@@ -23,8 +22,8 @@ export class DataApiService {
   }
 
   loadViews(
-    pageIndex = this.defaultPageIndex,
-    pageSize = this.defaultPageSize,
+    pageIndex = DEFAULT_PAGE_INDEX,
+    pageSize = DEFAULT_PAGE_SIZE,
     sortBy: string | null = 'name',
     sortDir: 'asc' | 'desc' = 'asc'
   ): Observable<PagedResult<Relation>> {
