@@ -9,10 +9,12 @@ import {RelationType} from '../enums/relation-type.enum';
 export class DataApiService {
   private http = inject(HttpClient);
   private readonly baseUrl = 'http://localhost:5282';
+  private readonly defaultPageIndex = 0;
+  private readonly defaultPageSize = 50;
 
   loadTables(
-    pageIndex = 0,
-    pageSize = 50,
+    pageIndex = this.defaultPageIndex,
+    pageSize = this.defaultPageSize,
     sortBy: string | null = 'name',
     sortDir: 'asc' | 'desc' = 'asc'
   ): Observable<PagedResult<Relation>> {
@@ -21,8 +23,8 @@ export class DataApiService {
   }
 
   loadViews(
-    pageIndex = 0,
-    pageSize = 50,
+    pageIndex = this.defaultPageIndex,
+    pageSize = this.defaultPageSize,
     sortBy: string | null = 'name',
     sortDir: 'asc' | 'desc' = 'asc'
   ): Observable<PagedResult<Relation>> {
