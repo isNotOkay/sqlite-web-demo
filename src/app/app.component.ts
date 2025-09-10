@@ -43,12 +43,16 @@ import {PagedResult} from './models/paged-result.model';
 })
 export class AppComponent implements OnInit {
   protected loading = signal(true);
-  protected listItems = signal<ListItem[]>([]);
+
+  // Two separate arrays now
+  protected tableItems = signal<ListItem[]>([]);
+  protected viewItems  = signal<ListItem[]>([]);
+
   protected selectedListItem = signal<ListItem | null>(null);
   protected columnNames = signal<string[]>([]);
   protected rows = signal<Record<string, unknown>[]>([]);
-  protected totalCount = signal(0);            // bind to MatPaginator.length
-  protected pageIndex = signal(0);             // 0-based for MatPaginator
+  protected totalCount = signal(0);
+  protected pageIndex = signal(0);
   protected pageSize = signal(50);
   protected sortBy = signal<string | null>(null);
   protected sortDir = signal<'asc' | 'desc'>('asc');
@@ -83,6 +87,13 @@ export class AppComponent implements OnInit {
         next: (result: PagedResult) => {
           this.rows.set(result.items ?? []);
           this.totalCount.set((result.total as number) ?? 0);
+
+          // Keep paginator in sync with server (in case of clamping)
+          const serverPageIndex = Math.max(0, (result.page ?? 1) - 1);
+          if (serverPageIndex !== this.pageIndex()) this.pageIndex.set(serverPageIndex);
+          if (typeof result.pageSize === 'number' && result.pageSize !== this.pageSize()) {
+            this.pageSize.set(result.pageSize);
+          }
         },
         error: () => {
           this.rows.set([]);
@@ -98,12 +109,16 @@ export class AppComponent implements OnInit {
     ]).subscribe({
       next: ([tablesRes, viewsRes]: [PagedResult<Relation>, PagedResult<Relation>]) => {
         const tableItems = this.toListItems(tablesRes?.items ?? [], RelationType.Table);
-        const viewItems = this.toListItems(viewsRes?.items ?? [], RelationType.View);
-        this.listItems.set([...tableItems, ...viewItems]);
+        const viewItems  = this.toListItems(viewsRes?.items ?? [], RelationType.View);
+
+        this.tableItems.set(tableItems);
+        this.viewItems.set(viewItems);
+
         this.selectFirstAvailable();
       },
       error: () => {
-        this.listItems.set([]);
+        this.tableItems.set([]);
+        this.viewItems.set([]);
         this.loading.set(false);
       },
     });
@@ -124,8 +139,7 @@ export class AppComponent implements OnInit {
   }
 
   private selectFirstAvailable(): void {
-    const items = this.listItems();
-    const first = items[0] ?? null;
+    const first = this.tableItems()[0] ?? this.viewItems()[0] ?? null;
 
     this.selectedListItem.set(first);
     this.pageIndex.set(0);
@@ -177,11 +191,7 @@ export class AppComponent implements OnInit {
     this.loadRows();
   }
 
-  protected hasRelationType(relationType: RelationType): boolean {
-    return this.listItems().some(item => item.relationType === relationType);
-  }
-
-  protected isNumeric(value: unknown): boolean {
+  protected isNumber(value: unknown): boolean {
     return _.isNumber(value);
   }
 }

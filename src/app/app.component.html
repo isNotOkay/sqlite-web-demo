@@ -1,4 +1,3 @@
-<!-- src/app/app.component.html -->
 <div class="layout">
   <!-- LEFT: Static list with sections (flat) -->
   <aside class="sidenav">
@@ -7,19 +6,17 @@
       <!-- Tables -->
       <div class="nav-section" role="group" aria-label="Tables">
         <div class="nav-section-label">Tables</div>
-        @for (item of listItems(); track item.id) {
-          @if (item.relationType === RelationType.Table) {
-            <button
-              type="button"
-              class="nav-item selectable"
-              [class.selected]="selectedListItem()?.id === item.id && selectedListItem()?.relationType === item.relationType"
-              [attr.aria-current]="selectedListItem()?.id === item.id && selectedListItem()?.relationType === item.relationType ? 'true' : null"
-              (click)="selectItem(item)">
-              {{ item.label }}
-            </button>
-          }
+        @for (item of tableItems(); track item.id) {
+          <button
+            type="button"
+            class="nav-item selectable"
+            [class.selected]="selectedListItem()?.id === item.id && selectedListItem()?.relationType === item.relationType"
+            [attr.aria-current]="selectedListItem()?.id === item.id && selectedListItem()?.relationType === item.relationType ? 'true' : null"
+            (click)="selectItem(item)">
+            {{ item.label }}
+          </button>
         }
-        @if (!hasRelationType(RelationType.Table)) {
+        @if (tableItems().length === 0) {
           <div class="nav-empty">No tables found</div>
         }
       </div>
@@ -29,19 +26,17 @@
       <!-- Views -->
       <div class="nav-section" role="group" aria-label="Views">
         <div class="nav-section-label">Views</div>
-        @for (item of listItems(); track item.id) {
-          @if (item.relationType === RelationType.View) {
-            <button
-              type="button"
-              class="nav-item selectable"
-              [class.selected]="selectedListItem()?.id === item.id && selectedListItem()?.relationType === item.relationType"
-              [attr.aria-current]="selectedListItem()?.id === item.id && selectedListItem()?.relationType === item.relationType ? 'true' : null"
-              (click)="selectItem(item)">
-              {{ item.label }}
-            </button>
-          }
+        @for (item of viewItems(); track item.id) {
+          <button
+            type="button"
+            class="nav-item selectable"
+            [class.selected]="selectedListItem()?.id === item.id && selectedListItem()?.relationType === item.relationType"
+            [attr.aria-current]="selectedListItem()?.id === item.id && selectedListItem()?.relationType === item.relationType ? 'true' : null"
+            (click)="selectItem(item)">
+            {{ item.label }}
+          </button>
         }
-        @if (!hasRelationType(RelationType.View)) {
+        @if (viewItems().length === 0) {
           <div class="nav-empty">No views found</div>
         }
       </div>
@@ -75,7 +70,7 @@
             <td
               mat-cell
               *matCellDef="let row"
-              [class.numeric]="isNumeric(row[columnName])">
+              [class.numeric]="isNumber(row[columnName])">
               {{ row[columnName] }}
             </td>
           </ng-container>
