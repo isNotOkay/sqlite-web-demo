@@ -1,4 +1,4 @@
-import {Component, computed, inject, OnInit, signal, viewChild} from '@angular/core';
+import {Component, inject, OnInit, signal, viewChild} from '@angular/core';
 
 import {MatButtonModule} from '@angular/material/button';
 import {
@@ -45,7 +45,6 @@ export class AppComponent implements OnInit {
   protected listItems = signal<ListItem[]>([]);
   protected selectedListItem = signal<ListItem | null>(null);
   protected columnNames = signal<string[]>([]);
-  protected displayedColumns = computed(() => [...this.columnNames()]);
   protected rows = signal<Record<string, unknown>[]>([]);
   protected totalCount = signal(0);
   protected pageIndex = signal(0);
