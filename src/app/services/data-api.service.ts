@@ -3,7 +3,6 @@ import {HttpClient, HttpParams} from '@angular/common/http';
 import {Observable} from 'rxjs';
 import {PagedResult} from '../models/paged-result.model';
 import {Relation} from '../models/relation.model';
-import {Row} from '../models/row.model';
 import {RelationType} from '../enums/relation-type.enum';
 
 @Injectable({providedIn: 'root'})
@@ -11,7 +10,7 @@ export class DataApiService {
   private http = inject(HttpClient);
   private readonly baseUrl = 'http://localhost:5282';
 
-  listTables(
+  loadTables(
     pageIndex = 0,
     pageSize = 50,
     sortBy: string | null = 'name',
@@ -21,7 +20,7 @@ export class DataApiService {
     return this.http.get<PagedResult<Relation>>(`${this.baseUrl}/api/tables`, {params});
   }
 
-  listViews(
+  loadViews(
     pageIndex = 0,
     pageSize = 50,
     sortBy: string | null = 'name',
@@ -31,17 +30,17 @@ export class DataApiService {
     return this.http.get<PagedResult<Relation>>(`${this.baseUrl}/api/views`, {params});
   }
 
-  getRows<T = Row>(
+  loadRows(
     relationType: RelationType,
     id: string,
     pageIndex: number,
     pageSize: number,
     sortBy?: string | null,
     sortDir: 'asc' | 'desc' = 'asc'
-  ): Observable<PagedResult<T>> {
+  ): Observable<PagedResult> {
     const params = this.buildParams(pageIndex, pageSize, sortBy ?? null, sortDir);
     const path = relationType === RelationType.Table ? 'tables' : 'views';
-    return this.http.get<PagedResult<T>>(
+    return this.http.get<PagedResult>(
       `${this.baseUrl}/api/${path}/${encodeURIComponent(id)}`,
       {params}
     );

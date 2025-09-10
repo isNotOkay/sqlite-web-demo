@@ -70,7 +70,7 @@ export class AppComponent implements OnInit {
     this.loadRowsSubscription?.unsubscribe();
 
     this.loadRowsSubscription = this.dataApiService
-      .getRows(
+      .loadRows(
         listItem.relationType,
         listItem.id,
         this.pageIndex(),
@@ -93,13 +93,12 @@ export class AppComponent implements OnInit {
 
   private loadTablesAndViews(): void {
     forkJoin([
-      this.dataApiService.listTables(),
-      this.dataApiService.listViews(),
+      this.dataApiService.loadTables(),
+      this.dataApiService.loadViews(),
     ]).subscribe({
       next: ([tablesRes, viewsRes]: [PagedResult<Relation>, PagedResult<Relation>]) => {
         const tableItems = this.toListItems(tablesRes?.items ?? [], RelationType.Table);
         const viewItems = this.toListItems(viewsRes?.items ?? [], RelationType.View);
-
         this.listItems.set([...tableItems, ...viewItems]);
         this.selectFirstAvailable();
       },
