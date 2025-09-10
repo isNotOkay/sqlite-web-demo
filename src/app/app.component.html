@@ -1,31 +1,33 @@
 <div class="layout">
   <aside class="sidenav">
     <nav class="nav-list" role="navigation">
-      <app-nav-section
-        label="Tables"
-        emptyText="No tables found"
-        [items]="tableItems()"
-        [selected]="selectedListItem()"
-        (selectionChange)="selectListItem($event)"
-      >
-      </app-nav-section>
+      @if (loadedTablesAndViews) {
+        <app-nav-section
+          label="Tables"
+          emptyText="No tables found"
+          [items]="tableItems()"
+          [selected]="selectedListItem()"
+          (selectionChange)="selectListItem($event)"
+        >
+        </app-nav-section>
 
-      <mat-divider></mat-divider>
+        <mat-divider></mat-divider>
 
-      <app-nav-section
-        label="Views"
-        emptyText="No views found"
-        [items]="viewItems()"
-        [selected]="selectedListItem()"
-        (selectionChange)="selectListItem($event)"
-      >
-      </app-nav-section>
+        <app-nav-section
+          label="Views"
+          emptyText="No views found"
+          [items]="viewItems()"
+          [selected]="selectedListItem()"
+          (selectionChange)="selectListItem($event)"
+        >
+        </app-nav-section>
+      }
     </nav>
   </aside>
 
   <section class="content">
-    @if (loading()) {
-      <app-loading-indicator />
+    @if (loadingRows()) {
+      <app-loading-indicator/>
     }
 
     <div class="table-container">

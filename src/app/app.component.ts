@@ -1,6 +1,6 @@
-import { Component, inject, OnInit, signal, viewChild } from '@angular/core';
+import {Component, inject, OnInit, signal, viewChild} from '@angular/core';
 
-import { MatButtonModule } from '@angular/material/button';
+import {MatButtonModule} from '@angular/material/button';
 import {
   MatCell,
   MatCellDef,
@@ -13,23 +13,23 @@ import {
   MatRowDef,
   MatTable,
 } from '@angular/material/table';
-import { MatPaginator, PageEvent } from '@angular/material/paginator';
-import { MatDivider } from '@angular/material/divider';
-import { MatSort, MatSortHeader, Sort } from '@angular/material/sort';
+import {MatPaginator, PageEvent} from '@angular/material/paginator';
+import {MatDivider} from '@angular/material/divider';
+import {MatSort, MatSortHeader, Sort} from '@angular/material/sort';
 
-import { finalize, forkJoin, Subscription } from 'rxjs';
+import {finalize, forkJoin, Subscription} from 'rxjs';
 
-import { DataApiService } from './services/data-api.service';
-import { LoadingIndicator } from './components/loading-indicator/loading-indicator';
+import {DataApiService} from './services/data-api.service';
+import {LoadingIndicator} from './components/loading-indicator/loading-indicator';
 
 import * as _ from 'underscore';
-import { RelationType } from './enums/relation-type.enum';
-import { ListItemModel } from './models/list-item.model';
-import { RelationApiModel } from './models/api/relation.api-model';
-import { PagedResultApiModel } from './models/api/paged-result.api-model';
-import { NavSectionComponent } from './nav-section/nav-section.component';
-import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE } from './constants/api-params.constants';
-import { RowModel } from './models/row.model';
+import {RelationType} from './enums/relation-type.enum';
+import {ListItemModel} from './models/list-item.model';
+import {RelationApiModel} from './models/api/relation.api-model';
+import {PagedResultApiModel} from './models/api/paged-result.api-model';
+import {NavSectionComponent} from './nav-section/nav-section.component';
+import {DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE} from './constants/api-params.constants';
+import {RowModel} from './models/row.model';
 
 @Component({
   selector: 'app-root',
@@ -57,7 +57,8 @@ import { RowModel } from './models/row.model';
   styleUrl: './app.component.scss',
 })
 export class AppComponent implements OnInit {
-  protected loading = signal(true);
+  protected loadingRows = signal(true);
+  protected loadedTablesAndViews = signal(false);
   protected tableItems = signal<ListItemModel[]>([]);
   protected viewItems = signal<ListItemModel[]>([]);
   protected selectedListItem = signal<ListItemModel | null>(null);
@@ -80,12 +81,12 @@ export class AppComponent implements OnInit {
     const listItem = this.selectedListItem();
     if (!listItem) return;
 
-    this.loading.set(true);
+    this.loadingRows.set(true);
     this.loadRowsSubscription?.unsubscribe();
 
     this.loadRowsSubscription = this.dataApiService
       .loadRows(listItem.relationType, listItem.id, this.pageIndex(), this.pageSize(), this.sortBy(), this.sortDir())
-      .pipe(finalize(() => this.loading.set(false)))
+      .pipe(finalize(() => this.loadingRows.set(false)))
       .subscribe({
         next: (result: PagedResultApiModel<RowModel>) => {
           this.rows.set(result.items ?? []);
@@ -108,11 +109,12 @@ export class AppComponent implements OnInit {
         this.viewItems.set(viewItems);
 
         this.selectFirstAvailable();
+        this.loadedTablesAndViews.set(true);
       },
       error: () => {
         this.tableItems.set([]);
         this.viewItems.set([]);
-        this.loading.set(false);
+        this.loadingRows.set(false);
       },
     });
   }
@@ -142,7 +144,7 @@ export class AppComponent implements OnInit {
     this.updateColumns();
 
     if (first) this.loadRows();
-    else this.loading.set(false);
+    else this.loadingRows.set(false);
   }
 
   protected selectListItem(item: ListItemModel): void {
