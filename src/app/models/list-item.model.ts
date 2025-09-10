@@ -1,4 +1,4 @@
-import {RelationType} from '../enums/relation-type.enum';
+import { RelationType } from '../enums/relation-type.enum';
 
 export interface ListItemModel {
   id: string;

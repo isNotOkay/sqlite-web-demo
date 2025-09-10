@@ -5,9 +5,14 @@
     <button
       type="button"
       class="nav-item selectable"
-      [class.selected]="selected()?.id === item.id && selected()?.relationType === item.relationType"
-      [attr.aria-current]="selected()?.id === item.id && selected()?.relationType === item.relationType ? 'true' : null"
-      (click)="select.emit(item)">
+      [class.selected]="
+        selected()?.id === item.id && selected()?.relationType === item.relationType
+      "
+      [attr.aria-current]="
+        selected()?.id === item.id && selected()?.relationType === item.relationType ? 'true' : null
+      "
+      (click)="selectionChange.emit(item)"
+    >
       {{ item.label }}
     </button>
   }

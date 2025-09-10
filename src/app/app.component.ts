@@ -1,6 +1,6 @@
-import {Component, inject, OnInit, signal, viewChild} from '@angular/core';
+import { Component, inject, OnInit, signal, viewChild } from '@angular/core';
 
-import {MatButtonModule} from '@angular/material/button';
+import { MatButtonModule } from '@angular/material/button';
 import {
   MatCell,
   MatCellDef,
@@ -11,35 +11,47 @@ import {
   MatHeaderRowDef,
   MatRow,
   MatRowDef,
-  MatTable
+  MatTable,
 } from '@angular/material/table';
-import {MatPaginator, PageEvent} from '@angular/material/paginator';
-import {MatDivider} from '@angular/material/divider';
-import {MatSort, MatSortHeader, Sort} from '@angular/material/sort';
+import { MatPaginator, PageEvent } from '@angular/material/paginator';
+import { MatDivider } from '@angular/material/divider';
+import { MatSort, MatSortHeader, Sort } from '@angular/material/sort';
 
-import {finalize, forkJoin, Subscription} from 'rxjs';
+import { finalize, forkJoin, Subscription } from 'rxjs';
 
-import {DataApiService} from './services/data-api.service';
-import {LoadingIndicator} from './components/loading-indicator/loading-indicator';
+import { DataApiService } from './services/data-api.service';
+import { LoadingIndicator } from './components/loading-indicator/loading-indicator';
 
 import * as _ from 'underscore';
-import {RelationType} from './enums/relation-type.enum';
-import {ListItemModel} from './models/list-item.model';
-import {RelationApiModel} from './models/api/relation.api-model';
-import {PagedResultApiModel} from './models/api/paged-result.api-model';
-import {NavSectionComponent} from './nav-section/nav-section.component';
-import {DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE} from './constants/api-params.constants';
-import {RowModel} from './models/row.model';
+import { RelationType } from './enums/relation-type.enum';
+import { ListItemModel } from './models/list-item.model';
+import { RelationApiModel } from './models/api/relation.api-model';
+import { PagedResultApiModel } from './models/api/paged-result.api-model';
+import { NavSectionComponent } from './nav-section/nav-section.component';
+import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE } from './constants/api-params.constants';
+import { RowModel } from './models/row.model';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [
-    MatTable, MatHeaderCell, MatCell, MatColumnDef,
-    MatHeaderRow, MatRow, MatRowDef, MatHeaderRowDef,
-    MatHeaderCellDef, MatCellDef,
-    MatPaginator, LoadingIndicator, MatButtonModule, MatDivider,
-    MatSort, MatSortHeader, NavSectionComponent,
+    MatTable,
+    MatHeaderCell,
+    MatCell,
+    MatColumnDef,
+    MatHeaderRow,
+    MatRow,
+    MatRowDef,
+    MatHeaderRowDef,
+    MatHeaderCellDef,
+    MatCellDef,
+    MatPaginator,
+    LoadingIndicator,
+    MatButtonModule,
+    MatDivider,
+    MatSort,
+    MatSortHeader,
+    NavSectionComponent,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
@@ -78,7 +90,7 @@ export class AppComponent implements OnInit {
         this.pageIndex(),
         this.pageSize(),
         this.sortBy(),
-        this.sortDir()
+        this.sortDir(),
       )
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
@@ -94,11 +106,11 @@ export class AppComponent implements OnInit {
   }
 
   private loadTablesAndViews(): void {
-    forkJoin([
-      this.dataApiService.loadTables(),
-      this.dataApiService.loadViews(),
-    ]).subscribe({
-      next: ([tablesRes, viewsRes]: [PagedResultApiModel<RelationApiModel>, PagedResultApiModel<RelationApiModel>]) => {
+    forkJoin([this.dataApiService.loadTables(), this.dataApiService.loadViews()]).subscribe({
+      next: ([tablesRes, viewsRes]: [
+        PagedResultApiModel<RelationApiModel>,
+        PagedResultApiModel<RelationApiModel>,
+      ]) => {
         const tableItems = this.toListItems(tablesRes?.items ?? [], RelationType.Table);
         const viewItems = this.toListItems(viewsRes?.items ?? [], RelationType.View);
 
@@ -115,8 +127,11 @@ export class AppComponent implements OnInit {
     });
   }
 
-  private toListItems(relations: RelationApiModel[] | null | undefined, type: RelationType): ListItemModel[] {
-    return (relations ?? []).map(relation => ({
+  private toListItems(
+    relations: RelationApiModel[] | null | undefined,
+    type: RelationType,
+  ): ListItemModel[] {
+    return (relations ?? []).map((relation) => ({
       id: relation.name,
       label: relation.name,
       relationType: type,
@@ -156,8 +171,8 @@ export class AppComponent implements OnInit {
 
     const sort = this.sort();
     if (sort) {
-      sort.active = '' as any;
-      sort.direction = '' as any;
+      sort.active = '';
+      sort.direction = '';
     }
 
     this.updateColumns();

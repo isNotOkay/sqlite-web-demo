@@ -10,7 +10,7 @@
 
 .sidenav {
   width: 260px;
-  border-right: 1px solid rgba(0, 0, 0, .12);
+  border-right: 1px solid rgba(0, 0, 0, 0.12);
   overflow: auto;
   padding: 8px 0;
 }
@@ -43,7 +43,7 @@
   position: sticky;
   bottom: 0;
   background: var(--mat-surface, #fff);
-  border-top: 1px solid rgba(0, 0, 0, .12);
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
   z-index: 2;
 }
 
@@ -79,11 +79,7 @@
 
 /* Striped (zebra) rows using MD3 tokens (subtle) */
 table.striped tr.mat-mdc-row:nth-child(odd) {
-  background-color: color-mix(
-      in srgb,
-      var(--mat-sys-surface) 92%,
-      var(--mat-sys-outline) 8%
-  );
+  background-color: color-mix(in srgb, var(--mat-sys-surface) 92%, var(--mat-sys-outline) 8%);
 }
 
 /* Right-align numeric cells & headers */
