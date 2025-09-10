@@ -1,20 +1,18 @@
-// eslint.config.js
-// @ts-check
 const eslint = require('@eslint/js');
 const tseslint = require('typescript-eslint');
 const angular = require('angular-eslint');
-const eslintConfigPrettier = require('eslint-config-prettier'); // add the glue plugin
+const eslintConfigPrettier = require('eslint-config-prettier');
 
 module.exports = tseslint.config(
   {
-    ignores: ['.angular/**', '.nx/**', 'coverage/**', 'dist/**'], // add these ignores
+    ignores: ['.angular/**', '.nx/**', 'coverage/**', 'dist/**'],
     files: ['**/*.ts'],
     extends: [
       eslint.configs.recommended,
       ...tseslint.configs.recommended,
       ...tseslint.configs.stylistic,
       ...angular.configs.tsRecommended,
-      eslintConfigPrettier, // add the glue plugin
+      eslintConfigPrettier,
     ],
     processor: angular.processInlineTemplates,
     rules: {
