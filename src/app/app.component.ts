@@ -27,6 +27,7 @@ import {RelationType} from './enums/relation-type.enum';
 import {ListItem} from './models/list-item.model';
 import {Relation} from './models/relation.model';
 import {PagedResult} from './models/paged-result.model';
+import {NavSectionComponent} from './nav-section/nav-section.component';
 
 @Component({
   selector: 'app-root',
@@ -36,7 +37,7 @@ import {PagedResult} from './models/paged-result.model';
     MatHeaderRow, MatRow, MatRowDef, MatHeaderRowDef,
     MatHeaderCellDef, MatCellDef,
     MatPaginator, LoadingIndicator, MatButtonModule, MatDivider,
-    MatSort, MatSortHeader,
+    MatSort, MatSortHeader, NavSectionComponent,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',

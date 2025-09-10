@@ -1,49 +1,26 @@
 <div class="layout">
-  <!-- LEFT: Static list with sections (flat) -->
   <aside class="sidenav">
     <nav class="nav-list" role="navigation" aria-label="Database objects">
-
-      <!-- Tables -->
-      <div class="nav-section" role="group" aria-label="Tables">
-        <div class="nav-section-label">Tables</div>
-        @for (item of tableItems(); track item.id) {
-          <button
-            type="button"
-            class="nav-item selectable"
-            [class.selected]="selectedListItem()?.id === item.id && selectedListItem()?.relationType === item.relationType"
-            [attr.aria-current]="selectedListItem()?.id === item.id && selectedListItem()?.relationType === item.relationType ? 'true' : null"
-            (click)="selectItem(item)">
-            {{ item.label }}
-          </button>
-        }
-        @if (tableItems().length === 0) {
-          <div class="nav-empty">No tables found</div>
-        }
-      </div>
+      <app-nav-section
+        label="Tables"
+        emptyText="No tables found"
+        [items]="tableItems()"
+        [selected]="selectedListItem()"
+        (select)="selectItem($event)">
+      </app-nav-section>
 
       <mat-divider></mat-divider>
 
-      <!-- Views -->
-      <div class="nav-section" role="group" aria-label="Views">
-        <div class="nav-section-label">Views</div>
-        @for (item of viewItems(); track item.id) {
-          <button
-            type="button"
-            class="nav-item selectable"
-            [class.selected]="selectedListItem()?.id === item.id && selectedListItem()?.relationType === item.relationType"
-            [attr.aria-current]="selectedListItem()?.id === item.id && selectedListItem()?.relationType === item.relationType ? 'true' : null"
-            (click)="selectItem(item)">
-            {{ item.label }}
-          </button>
-        }
-        @if (viewItems().length === 0) {
-          <div class="nav-empty">No views found</div>
-        }
-      </div>
+      <app-nav-section
+        label="Views"
+        emptyText="No views found"
+        [items]="viewItems()"
+        [selected]="selectedListItem()"
+        (select)="selectItem($event)">
+      </app-nav-section>
     </nav>
   </aside>
 
-  <!-- RIGHT: Dynamic grid + paginator -->
   <section class="content" style="position: relative;">
     @if (loading()) {
       <app-loading-indicator/>
@@ -67,6 +44,7 @@
               [mat-sort-header]="columnName">
               {{ columnName }}
             </th>
+
             <td
               mat-cell
               *matCellDef="let row"
@@ -75,6 +53,7 @@
             </td>
           </ng-container>
         }
+
         <tr mat-header-row *matHeaderRowDef="columnNames(); sticky: true"></tr>
         <tr mat-row *matRowDef="let row; columns: columnNames();"></tr>
       </table>

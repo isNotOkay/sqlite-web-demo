@@ -15,45 +15,11 @@
   padding: 8px 0;
 }
 
-/* Static list with sections */
+/* Container that holds the two nav sections */
 .nav-list {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.nav-section-label {
-  font: var(--mat-sys-title-medium);
-  padding: 4px 16px;
-  color: var(--mat-sys-on-surface-variant);
-}
-
-.nav-item {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  width: 100%;
-  text-align: left;
-  padding: 10px 16px 10px 25px;
-  border-left: 5px solid transparent;
-  cursor: pointer;
-  font: inherit;
-  color: inherit;
-}
-
-.nav-item:not(:disabled):hover {
-  background: rgba(0, 0, 0, 0.04);
-}
-
-.nav-item.selected {
-  background: rgba(0, 0, 0, 0.06);
-  border-left-color: var(--mat-sys-primary);
-  font-weight: 500;
-}
-
-.nav-item:disabled {
-  opacity: .6;
-  cursor: default;
 }
 
 .content {
@@ -105,11 +71,12 @@
   background-color: var(--mat-sys-primary);
 }
 
+/* Sort arrow color on primary header background */
 ::ng-deep .mat-sort-header-arrow svg {
   fill: white !important;
 }
 
-/* --- Striped (zebra) rows using MD3 tokens (subtle) --- */
+/* Striped (zebra) rows using MD3 tokens (subtle) */
 table.striped tr.mat-mdc-row:nth-child(odd) {
   background-color: color-mix(
       in srgb,
@@ -122,16 +89,5 @@ table.striped tr.mat-mdc-row:nth-child(odd) {
 td.mat-mdc-cell.numeric,
 th.mat-mdc-header-cell.numeric {
   text-align: right;
-  /* keep digits aligned nicely */
   font-variant-numeric: tabular-nums;
 }
-
-/* Optional: subtle placeholder text for empty sections */
-.nav-empty {
-  padding: 6px 16px 6px 25px;
-  color: var(--mat-sys-on-surface-variant);
-  font-style: italic;
-}
-
-/* Mark selectable items explicitly (keeps your :disabled variant intact) */
-.nav-item.selectable { cursor: pointer; }

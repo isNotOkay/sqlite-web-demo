@@ -1,0 +1,52 @@
+/* Root of the section */
+:host {
+  display: block;
+}
+
+/* Section label */
+.nav-section-label {
+  font: var(--mat-sys-title-medium);
+  padding: 4px 16px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+/* Item button */
+.nav-item {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  padding: 10px 16px 10px 25px;
+  border-left: 5px solid transparent;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.nav-item:not(:disabled):hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.nav-item.selected {
+  background: rgba(0, 0, 0, 0.06);
+  border-left-color: var(--mat-sys-primary);
+  font-weight: 500;
+}
+
+.nav-item:disabled {
+  opacity: .6;
+  cursor: default;
+}
+
+/* Optional: subtle placeholder text for empty sections */
+.nav-empty {
+  padding: 6px 16px 6px 25px;
+  color: var(--mat-sys-on-surface-variant);
+  font-style: italic;
+}
+
+/* Mark selectable items explicitly (keeps :disabled variant intact) */
+.nav-item.selectable {
+  cursor: pointer;
+}

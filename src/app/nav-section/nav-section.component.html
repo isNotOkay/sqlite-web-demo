@@ -1,0 +1,18 @@
+<div class="nav-section" role="group" [attr.aria-label]="label()">
+  <div class="nav-section-label">{{ label() }}</div>
+
+  @for (item of items(); track item.id) {
+    <button
+      type="button"
+      class="nav-item selectable"
+      [class.selected]="selected()?.id === item.id && selected()?.relationType === item.relationType"
+      [attr.aria-current]="selected()?.id === item.id && selected()?.relationType === item.relationType ? 'true' : null"
+      (click)="select.emit(item)">
+      {{ item.label }}
+    </button>
+  }
+
+  @if (items().length === 0) {
+    <div class="nav-empty">{{ emptyText() }}</div>
+  }
+</div>
