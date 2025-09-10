@@ -93,8 +93,8 @@ export class AppComponent implements OnInit {
 
   private loadTablesAndViews(): void {
     forkJoin([
-      this.dataApiService.listTables(), // returns PagedResult<Relation>
-      this.dataApiService.listViews(),  // returns PagedResult<Relation>
+      this.dataApiService.listTables(),
+      this.dataApiService.listViews(),
     ]).subscribe({
       next: ([tablesRes, viewsRes]: [PagedResult<Relation>, PagedResult<Relation>]) => {
         const tableItems = this.toListItems(tablesRes?.items ?? [], RelationType.Table);
