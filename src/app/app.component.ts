@@ -65,15 +65,15 @@ export class AppComponent implements OnInit {
     const listItem = this.selectedListItem();
     if (!listItem) return;
 
-    this.loadRowsSubscription?.unsubscribe();
     this.loading.set(true);
+    this.loadRowsSubscription?.unsubscribe();
     this.loadRowsSubscription = this.dataApiService
       .getRows(
         listItem.relationType,
         listItem.id,
         this.pageIndex(),
         this.pageSize(),
-        this.sortBy() ?? undefined,
+        this.sortBy(),
         this.sortDir()
       )
       .pipe(finalize(() => this.loading.set(false)))
