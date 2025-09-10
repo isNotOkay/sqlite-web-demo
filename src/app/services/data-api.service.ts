@@ -46,18 +46,12 @@ export class DataApiService {
   ): Observable<PagedResultApiModel<RowModel>> {
     const params = this.buildParams(pageIndex, pageSize, sortBy ?? null, sortDir);
     const path = relationType === RelationType.Table ? 'tables' : 'views';
-    return this.http.get<PagedResultApiModel<RowModel>>(
-      `${this.baseUrl}/api/${path}/${encodeURIComponent(id)}`,
-      { params },
-    );
+    return this.http.get<PagedResultApiModel<RowModel>>(`${this.baseUrl}/api/${path}/${encodeURIComponent(id)}`, {
+      params,
+    });
   }
 
-  private buildParams(
-    pageIndex: number,
-    pageSize: number,
-    sortBy: string | null,
-    sortDir: 'asc' | 'desc',
-  ): HttpParams {
+  private buildParams(pageIndex: number, pageSize: number, sortBy: string | null, sortDir: 'asc' | 'desc'): HttpParams {
     let params = new HttpParams().set('page', pageIndex + 1).set('pageSize', pageSize);
 
     if (sortBy && sortBy.trim().length > 0) {

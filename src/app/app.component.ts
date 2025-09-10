@@ -84,14 +84,7 @@ export class AppComponent implements OnInit {
     this.loadRowsSubscription?.unsubscribe();
 
     this.loadRowsSubscription = this.dataApiService
-      .loadRows(
-        listItem.relationType,
-        listItem.id,
-        this.pageIndex(),
-        this.pageSize(),
-        this.sortBy(),
-        this.sortDir(),
-      )
+      .loadRows(listItem.relationType, listItem.id, this.pageIndex(), this.pageSize(), this.sortBy(), this.sortDir())
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (result: PagedResultApiModel<RowModel>) => {
@@ -107,10 +100,7 @@ export class AppComponent implements OnInit {
 
   private loadTablesAndViews(): void {
     forkJoin([this.dataApiService.loadTables(), this.dataApiService.loadViews()]).subscribe({
-      next: ([tablesRes, viewsRes]: [
-        PagedResultApiModel<RelationApiModel>,
-        PagedResultApiModel<RelationApiModel>,
-      ]) => {
+      next: ([tablesRes, viewsRes]: [PagedResultApiModel<RelationApiModel>, PagedResultApiModel<RelationApiModel>]) => {
         const tableItems = this.toListItems(tablesRes?.items ?? [], RelationType.Table);
         const viewItems = this.toListItems(viewsRes?.items ?? [], RelationType.View);
 
@@ -127,10 +117,7 @@ export class AppComponent implements OnInit {
     });
   }
 
-  private toListItems(
-    relations: RelationApiModel[] | null | undefined,
-    type: RelationType,
-  ): ListItemModel[] {
+  private toListItems(relations: RelationApiModel[] | null | undefined, type: RelationType): ListItemModel[] {
     return (relations ?? []).map((relation) => ({
       id: relation.name,
       label: relation.name,
