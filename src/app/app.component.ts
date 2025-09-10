@@ -26,6 +26,7 @@ import * as _ from 'underscore';
 import {RelationType} from './enums/relation-type.enum';
 import {ListItem} from './models/list-item.model';
 import {Relation} from './models/relation.model';
+import {PagedResult} from './models/paged-result.model';
 
 @Component({
   selector: 'app-root',
@@ -46,8 +47,8 @@ export class AppComponent implements OnInit {
   protected selectedListItem = signal<ListItem | null>(null);
   protected columnNames = signal<string[]>([]);
   protected rows = signal<Record<string, unknown>[]>([]);
-  protected totalCount = signal(0);
-  protected pageIndex = signal(0);
+  protected totalCount = signal(0);            // bind to MatPaginator.length
+  protected pageIndex = signal(0);             // 0-based for MatPaginator
   protected pageSize = signal(50);
   protected sortBy = signal<string | null>(null);
   protected sortDir = signal<'asc' | 'desc'>('asc');
@@ -67,6 +68,7 @@ export class AppComponent implements OnInit {
 
     this.loading.set(true);
     this.loadRowsSubscription?.unsubscribe();
+
     this.loadRowsSubscription = this.dataApiService
       .getRows(
         listItem.relationType,
@@ -78,9 +80,9 @@ export class AppComponent implements OnInit {
       )
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: (result) => {
-          this.rows.set(result.items);
-          this.totalCount.set(result.totalCount);
+        next: (result: PagedResult) => {
+          this.rows.set(result.items ?? []);
+          this.totalCount.set((result.total as number) ?? 0);
         },
         error: () => {
           this.rows.set([]);
@@ -91,12 +93,12 @@ export class AppComponent implements OnInit {
 
   private loadTablesAndViews(): void {
     forkJoin([
-      this.dataApiService.listTables(),
-      this.dataApiService.listViews(),
+      this.dataApiService.listTables(), // returns PagedResult<Relation>
+      this.dataApiService.listViews(),  // returns PagedResult<Relation>
     ]).subscribe({
-      next: ([tables, views]: [Relation[], Relation[]]) => {
-        const tableItems = this.toListItems(tables, RelationType.Table);
-        const viewItems = this.toListItems(views, RelationType.View);
+      next: ([tablesRes, viewsRes]: [PagedResult<Relation>, PagedResult<Relation>]) => {
+        const tableItems = this.toListItems(tablesRes?.items ?? [], RelationType.Table);
+        const viewItems = this.toListItems(viewsRes?.items ?? [], RelationType.View);
 
         this.listItems.set([...tableItems, ...viewItems]);
         this.selectFirstAvailable();
@@ -136,7 +138,6 @@ export class AppComponent implements OnInit {
     if (first) this.loadRows();
     else this.loading.set(false);
   }
-
 
   protected selectItem(item: ListItem): void {
     const sel = this.selectedListItem();
