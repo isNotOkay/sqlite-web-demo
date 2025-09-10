@@ -75,7 +75,7 @@
             <td
               mat-cell
               *matCellDef="let row"
-              [class.numeric]="isNumericColumn(columnName)">
+              [class.numeric]="isNumeric(row[columnName])">
               {{ row[columnName] }}
             </td>
           </ng-container>

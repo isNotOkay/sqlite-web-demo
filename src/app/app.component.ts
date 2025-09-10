@@ -181,11 +181,7 @@ export class AppComponent implements OnInit {
     return this.listItems().some(item => item.relationType === relationType);
   }
 
-  protected isNumericColumn(columnName: string): boolean {
-    const first = this.rows().find(row => {
-      const value = row[columnName];
-      return value != null && value !== '';
-    });
-    return first ? _.isNumber((first as any)[columnName]) : false;
+  protected isNumeric(value: unknown): boolean {
+    return _.isNumber(value);
   }
 }
