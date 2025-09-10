@@ -29,6 +29,7 @@ import {Relation} from './models/relation.model';
 import {PagedResult} from './models/paged-result.model';
 import {NavSectionComponent} from './nav-section/nav-section.component';
 import {DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE} from './constants/api-params.constants';
+import {Row} from './models/row.model';
 
 @Component({
   selector: 'app-root',
@@ -56,8 +57,6 @@ export class AppComponent implements OnInit {
   protected sortBy = signal<string | null>(null);
   protected sortDir = signal<'asc' | 'desc'>('asc');
   protected sort = viewChild.required(MatSort);
-  protected readonly RelationType = RelationType;
-
   private loadRowsSubscription?: Subscription;
   private readonly dataApiService = inject(DataApiService);
 
@@ -83,7 +82,7 @@ export class AppComponent implements OnInit {
       )
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: (result: PagedResult) => {
+        next: (result: PagedResult<Row>) => {
           this.rows.set(result.items ?? []);
           this.totalCount.set((result.total as number) ?? 0);
         },

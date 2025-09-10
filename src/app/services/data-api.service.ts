@@ -5,6 +5,7 @@ import {PagedResult} from '../models/paged-result.model';
 import {Relation} from '../models/relation.model';
 import {RelationType} from '../enums/relation-type.enum';
 import {DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE} from '../constants/api-params.constants';
+import {Row} from '../models/row.model';
 
 @Injectable({providedIn: 'root'})
 export class DataApiService {
@@ -38,10 +39,10 @@ export class DataApiService {
     pageSize: number,
     sortBy?: string | null,
     sortDir: 'asc' | 'desc' = 'asc'
-  ): Observable<PagedResult> {
+  ): Observable<PagedResult<Row>> {
     const params = this.buildParams(pageIndex, pageSize, sortBy ?? null, sortDir);
     const path = relationType === RelationType.Table ? 'tables' : 'views';
-    return this.http.get<PagedResult>(
+    return this.http.get<PagedResult<Row>>(
       `${this.baseUrl}/api/${path}/${encodeURIComponent(id)}`,
       {params}
     );

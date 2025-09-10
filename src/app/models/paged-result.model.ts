@@ -1,6 +1,4 @@
-import { Row } from './row.model';
-
-export interface PagedResult<T = Row> {
+export interface PagedResult<T> {
   page: number;
   pageSize: number;
   total: number;
