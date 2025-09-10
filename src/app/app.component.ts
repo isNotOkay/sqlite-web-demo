@@ -25,8 +25,8 @@ import {LoadingIndicator} from './components/loading-indicator/loading-indicator
 import * as _ from 'underscore';
 import {RelationType} from './enums/relation-type.enum';
 import {ListItemModel} from './models/list-item.model';
-import {RelationApiModel} from './models/api/relation.model';
-import {PagedResultApiModel} from './models/api/paged-result.model';
+import {RelationApiModel} from './models/api/relation.api-model';
+import {PagedResultApiModel} from './models/api/paged-result.api-model';
 import {NavSectionComponent} from './nav-section/nav-section.component';
 import {DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE} from './constants/api-params.constants';
 import {RowModel} from './models/row.model';

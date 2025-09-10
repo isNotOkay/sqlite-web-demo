@@ -1,8 +1,8 @@
 import {inject, Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {Observable} from 'rxjs';
-import {PagedResultApiModel} from '../models/api/paged-result.model';
-import {RelationApiModel} from '../models/api/relation.model';
+import {PagedResultApiModel} from '../models/api/paged-result.api-model';
+import {RelationApiModel} from '../models/api/relation.api-model';
 import {RelationType} from '../enums/relation-type.enum';
 import {DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE} from '../constants/api-params.constants';
 import {RowModel} from '../models/row.model';
