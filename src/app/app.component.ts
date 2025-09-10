@@ -144,9 +144,9 @@ export class AppComponent implements OnInit {
     else this.loading.set(false);
   }
 
-  protected selectItem(item: ListItem): void {
-    const sel = this.selectedListItem();
-    if (sel?.id === item.id && sel?.relationType === item.relationType) return;
+  protected selectListItem(item: ListItem): void {
+    const selectedItem = this.selectedListItem();
+    if (selectedItem?.id === item.id && selectedItem?.relationType === item.relationType) return;
 
     this.selectedListItem.set(item);
     this.pageIndex.set(0);

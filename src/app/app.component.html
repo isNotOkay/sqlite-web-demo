@@ -6,7 +6,7 @@
         emptyText="No tables found"
         [items]="tableItems()"
         [selected]="selectedListItem()"
-        (select)="selectItem($event)">
+        (select)="selectListItem($event)">
       </app-nav-section>
 
       <mat-divider></mat-divider>
@@ -16,7 +16,7 @@
         emptyText="No views found"
         [items]="viewItems()"
         [selected]="selectedListItem()"
-        (select)="selectItem($event)">
+        (select)="selectListItem($event)">
       </app-nav-section>
     </nav>
   </aside>
@@ -30,8 +30,8 @@
       <table
         class="striped"
         mat-table
-        [dataSource]="rows()"
         matSort
+        [dataSource]="rows()"
         [matSortDisabled]="columnNames().length === 0"
         (matSortChange)="onSort($event)"
       >
@@ -40,7 +40,6 @@
             <th
               mat-header-cell
               *matHeaderCellDef
-              sticky
               [mat-sort-header]="columnName">
               {{ columnName }}
             </th>
@@ -60,12 +59,12 @@
     </div>
 
     <mat-paginator
+      class="footer-paginator"
+      showFirstLastButtons
       [length]="totalCount()"
       [pageIndex]="pageIndex()"
       [pageSize]="pageSize()"
       [hidePageSize]="true"
-      showFirstLastButtons
-      class="footer-paginator"
       (page)="onPage($event)">
     </mat-paginator>
   </section>
