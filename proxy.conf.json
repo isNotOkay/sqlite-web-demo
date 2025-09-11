@@ -1,0 +1,11 @@
+[
+  {
+    "context": [
+      "/api/web-viewer"
+    ],
+    "target": "http://localhost:4713",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  }
+]
