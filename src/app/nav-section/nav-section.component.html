@@ -1,6 +1,7 @@
-<div class="nav-section" role="group">
-  <div class="nav-section-label">{{ label() }}</div>
+<div class="nav-section-label">{{ label() }}</div>
 
+<!-- Scrollable list area; label above stays fixed -->
+<div class="nav-items" role="group" aria-label="{{ label() }} list">
   @for (item of items(); track item.id) {
     <button
       type="button"

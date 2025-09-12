@@ -1,13 +1,24 @@
-/* Root of the section */
+/* Host becomes a vertical flex container so the label is not in the scroll area */
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* allow flex item to shrink inside sidebar */
 }
 
-/* Section label */
+/* Section label (always visible) */
 .nav-section-label {
   font: var(--mat-sys-title-medium);
   padding: 4px 16px;
   color: var(--mat-sys-on-surface-variant);
+  flex: 0 0 auto;
+}
+
+/* Scroll container for the items */
+.nav-items {
+  flex: 1 1 auto;
+  min-height: 0; /* important so it can actually shrink */
+  overflow: auto;
+  padding-block: 2px; /* subtle breathing room for first/last button */
 }
 
 /* Item button */
