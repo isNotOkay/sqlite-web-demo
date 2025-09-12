@@ -3,7 +3,7 @@
     <nav class="nav-list" role="navigation">
       @if (loadedTablesAndViews()) {
         <app-nav-section
-          label="Tables"
+          label="Tabellen"
           emptyText="No tables found"
           [items]="tableItems()"
           [selected]="selectedListItem()"
@@ -14,7 +14,7 @@
         <mat-divider></mat-divider>
 
         <app-nav-section
-          label="Views"
+          label="Ansichten"
           emptyText="No views found"
           [items]="viewItems()"
           [selected]="selectedListItem()"
