@@ -1,4 +1,10 @@
-<div class="nav-section-label">{{ label() }}</div>
+<div style="display: flex; align-items: center; height: 40px;   font: var(--mat-sys-title-medium);
+  box-sizing: border-box;
+  padding: 4px 16px;
+  color: var(--mat-sys-on-surface-variant);
+  flex: 0 0 auto;">
+  <div class="nav-section-label">{{ label() }}</div>
+</div>
 
 <!-- Scrollable list area; label above stays fixed -->
 <div class="nav-items" role="group" aria-label="{{ label() }} list">

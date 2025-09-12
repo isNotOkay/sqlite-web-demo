@@ -7,10 +7,11 @@
 
 /* Section label (always visible) */
 .nav-section-label {
-  font: var(--mat-sys-title-medium);
+/*  font: var(--mat-sys-title-medium);
+  box-sizing: border-box;
   padding: 4px 16px;
   color: var(--mat-sys-on-surface-variant);
-  flex: 0 0 auto;
+  flex: 0 0 auto;*/
 }
 
 /* Scroll container for the items */
@@ -18,7 +19,6 @@
   flex: 1 1 auto;
   min-height: 0; /* important so it can actually shrink */
   overflow: auto;
-  padding-block: 2px; /* subtle breathing room for first/last button */
 }
 
 /* Item button */
