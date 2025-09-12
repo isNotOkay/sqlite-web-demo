@@ -4,7 +4,7 @@
       @if (loadedTablesAndViews()) {
         <app-nav-section
           label="Tabellen"
-          emptyText="No tables found"
+          emptyText="Keine Tabellen gefunden"
           [items]="tableItems()"
           [selected]="selectedListItem()"
           (selectionChange)="selectListItem($event)"
@@ -15,7 +15,7 @@
 
         <app-nav-section
           label="Ansichten"
-          emptyText="No views found"
+          emptyText="Keine Ansichten gefunden"
           [items]="viewItems()"
           [selected]="selectedListItem()"
           (selectionChange)="selectListItem($event)"
@@ -44,7 +44,6 @@
             <th mat-header-cell *matHeaderCellDef [mat-sort-header]="columnName">
               {{ columnName }}
             </th>
-
             <td mat-cell *matCellDef="let row" [class.numeric]="isNumber(row[columnName])">
               {{ row[columnName] }}
             </td>
@@ -53,6 +52,13 @@
 
         <tr mat-header-row *matHeaderRowDef="columnNames(); sticky: true"></tr>
         <tr mat-row *matRowDef="let row; columns: columnNames()"></tr>
+
+        <!-- Empty state -->
+        <tr class="no-data-row" *matNoDataRow>
+          <td class="mat-mdc-cell" [attr.colspan]="columnNames().length || 1">
+            <div class="empty-state">keine Daten vorhanden</div>
+          </td>
+        </tr>
       </table>
     </div>
 

@@ -8,7 +8,7 @@ import {
   MatHeaderCell,
   MatHeaderCellDef,
   MatHeaderRow,
-  MatHeaderRowDef,
+  MatHeaderRowDef, MatNoDataRow,
   MatRow,
   MatRowDef,
   MatTable,
@@ -52,6 +52,7 @@ import { RowModel } from './models/row.model';
     MatSort,
     MatSortHeader,
     NavSectionComponent,
+    MatNoDataRow,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
@@ -89,7 +90,7 @@ export class AppComponent implements OnInit {
       .pipe(finalize(() => this.loadingRows.set(false)))
       .subscribe({
         next: (result: PagedResultApiModel<RowModel>) => {
-          this.rows.set(result.items ?? []);
+          this.rows.set([]);
           this.totalCount.set((result.total as number) ?? 0);
         },
         error: () => {
