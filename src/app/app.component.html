@@ -54,11 +54,13 @@
         <tr mat-row *matRowDef="let row; columns: columnNames()"></tr>
 
         <!-- Empty state -->
-        <tr class="no-data-row" *matNoDataRow>
-          <td class="mat-mdc-cell" [attr.colspan]="columnNames().length || 1">
-            <div class="empty-state">keine Daten vorhanden</div>
-          </td>
-        </tr>
+        @if (loadedTablesAndViews() && !loadingRows() && totalCount() === 0) {
+          <tr class="no-data-row" *matNoDataRow>
+            <td class="mat-mdc-cell" [attr.colspan]="columnNames().length || 1">
+              <div class="empty-state">keine Daten vorhanden</div>
+            </td>
+          </tr>
+        }
       </table>
     </div>
 

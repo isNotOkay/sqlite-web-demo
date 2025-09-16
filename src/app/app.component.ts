@@ -90,7 +90,7 @@ export class AppComponent implements OnInit {
       .pipe(finalize(() => this.loadingRows.set(false)))
       .subscribe({
         next: (result: PagedResultApiModel<RowModel>) => {
-          this.rows.set([]);
+          this.rows.set(result.items ?? []);
           this.totalCount.set((result.total as number) ?? 0);
         },
         error: () => {
