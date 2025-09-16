@@ -1,27 +1,34 @@
 import {Injectable} from '@angular/core';
 import * as signalR from '@microsoft/signalr';
+import {Observable, Subject} from 'rxjs';
+
+export interface SelectRelationEvent {
+  type: 'table' | 'view';
+  name: string;
+}
 
 @Injectable({providedIn: 'root'})
 export class SignalRService {
   private hub?: signalR.HubConnection;
+  private selectRelationSubject = new Subject<SelectRelationEvent>();
+  readonly onSelectRelation$: Observable<SelectRelationEvent> = this.selectRelationSubject.asObservable();
 
   start(): void {
     if (this.hub?.state === signalR.HubConnectionState.Connected) return;
 
     this.hub = new signalR.HubConnectionBuilder()
-      .withUrl('/hubs/notifications')              // same host/path as API
+      .withUrl('/hubs/notifications')
       .withAutomaticReconnect()
       .build();
 
-    // Handle the "Announcement" event from the server
-    this.hub.on('Announcement', (payload: { title: string; message: string }) => {
-      alert('received signal r event');
+    this.hub.on('SelectRelation', (payload: any) => {
+      const type = (payload?.type ?? '').toString().toLowerCase();
+      const name = (payload?.name ?? '').toString();
+      if ((type === 'table' || type === 'view') && name) {
+        this.selectRelationSubject.next({type, name});
+      }
     });
 
-    // Start the connection
     this.hub.start().catch(err => console.error('SignalR start error', err));
   }
-
-  // (Optional) If you later want the client to send messages to the hub:
-  // sendSomething(...) { return this.hub?.invoke('SomeMethod', data); }
 }

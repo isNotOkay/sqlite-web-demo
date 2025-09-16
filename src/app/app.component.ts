@@ -1,6 +1,6 @@
-import {Component, inject, OnInit, signal, viewChild} from '@angular/core';
+import { Component, inject, OnInit, signal, viewChild } from '@angular/core';
 
-import {MatButtonModule} from '@angular/material/button';
+import { MatButtonModule } from '@angular/material/button';
 import {
   MatCell,
   MatCellDef,
@@ -14,24 +14,24 @@ import {
   MatRowDef,
   MatTable,
 } from '@angular/material/table';
-import {MatPaginator, PageEvent} from '@angular/material/paginator';
-import {MatDivider} from '@angular/material/divider';
-import {MatSort, MatSortHeader, Sort} from '@angular/material/sort';
+import { MatPaginator, PageEvent } from '@angular/material/paginator';
+import { MatDivider } from '@angular/material/divider';
+import { MatSort, MatSortHeader, Sort } from '@angular/material/sort';
 
-import {finalize, forkJoin, Subscription} from 'rxjs';
+import { finalize, forkJoin, Subscription } from 'rxjs';
 
-import {DataApiService} from './services/data-api.service';
-import {LoadingIndicator} from './components/loading-indicator/loading-indicator';
+import { DataApiService } from './services/data-api.service';
+import { LoadingIndicator } from './components/loading-indicator/loading-indicator';
 
 import * as _ from 'underscore';
-import {RelationType} from './enums/relation-type.enum';
-import {ListItemModel} from './models/list-item.model';
-import {RelationApiModel} from './models/api/relation.api-model';
-import {PagedResultApiModel} from './models/api/paged-result.api-model';
-import {NavSectionComponent} from './nav-section/nav-section.component';
-import {DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE} from './constants/api-params.constants';
-import {RowModel} from './models/row.model';
-import {SignalRService} from './services/signalr.service';
+import { RelationType } from './enums/relation-type.enum';
+import { ListItemModel } from './models/list-item.model';
+import { RelationApiModel } from './models/api/relation.api-model';
+import { PagedResultApiModel } from './models/api/paged-result.api-model';
+import { NavSectionComponent } from './nav-section/nav-section.component';
+import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE } from './constants/api-params.constants';
+import { RowModel } from './models/row.model';
+import { SignalRService, SelectRelationEvent } from './services/signalr.service';
 
 @Component({
   selector: 'app-root',
@@ -73,12 +73,25 @@ export class AppComponent implements OnInit {
   protected sortBy = signal<string | null>(null);
   protected sortDir = signal<'asc' | 'desc'>('asc');
   protected sort = viewChild.required(MatSort);
+
   private loadRowsSubscription?: Subscription;
   private readonly dataApiService = inject(DataApiService);
   private readonly signalR = inject(SignalRService);
 
+  /** If a SelectRelation event arrives before data is loaded, buffer it here */
+  private pendingSelect?: SelectRelationEvent;
+
   ngOnInit(): void {
+    // Start SignalR and subscribe to server-driven selections
     this.signalR.start();
+    this.signalR.onSelectRelation$.subscribe((evt) => {
+      if (!this.loadedTablesAndViews()) {
+        this.pendingSelect = evt;
+      } else {
+        this.applyServerSelection(evt);
+      }
+    });
+
     this.loadTablesAndViews();
   }
 
@@ -130,10 +143,16 @@ export class AppComponent implements OnInit {
         // Pick first as a fallback (will be overwritten below if vw_holidays exists)
         this.selectFirstAvailable();
 
-        // ✅ Test selection: auto-select the view "vw_holidays" when available
+        // ✅ Optional auto-select
         this.selectById(RelationType.View, 'vw_holidays');
 
         this.loadedTablesAndViews.set(true);
+
+        // Apply any pending server selection now that data is ready
+        if (this.pendingSelect) {
+          this.applyServerSelection(this.pendingSelect);
+          this.pendingSelect = undefined;
+        }
       },
       error: () => {
         this.tableItems.set([]);
@@ -212,5 +231,11 @@ export class AppComponent implements OnInit {
 
   protected isNumber(value: unknown): boolean {
     return _.isNumber(value);
+  }
+
+  /** Apply a server-driven selection */
+  private applyServerSelection(evt: SelectRelationEvent): void {
+    const relType = evt.type === 'view' ? RelationType.View : RelationType.Table;
+    this.selectById(relType, evt.name);
   }
 }
