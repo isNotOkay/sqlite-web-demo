@@ -32,6 +32,8 @@ import { NavSectionComponent } from './nav-section/nav-section.component';
 import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE } from './constants/api-params.constants';
 import { RowModel } from './models/row.model';
 import { SignalRService, SelectRelationEvent } from './services/signalr.service';
+import { ToastService } from './services/toast.service';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-root',
@@ -55,6 +57,7 @@ import { SignalRService, SelectRelationEvent } from './services/signalr.service'
     MatSortHeader,
     NavSectionComponent,
     MatNoDataRow,
+    MatSnackBarModule,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
@@ -77,6 +80,7 @@ export class AppComponent implements OnInit {
   private loadRowsSubscription?: Subscription;
   private readonly dataApiService = inject(DataApiService);
   private readonly signalR = inject(SignalRService);
+  private readonly toast = inject(ToastService);
 
   /** If a SelectRelation event arrives before data is loaded, buffer it here */
   private pendingSelect?: SelectRelationEvent;
@@ -100,6 +104,7 @@ export class AppComponent implements OnInit {
     const pool = relationType === RelationType.Table ? this.tableItems() : this.viewItems();
     const found = pool.find((i) => i.id === id);
     if (found) this.selectListItem(found);
+    else this.toast.showError(`Relation ${id} not found in ${relationType}.`);
   }
 
   private loadRows(): void {
@@ -127,6 +132,7 @@ export class AppComponent implements OnInit {
         error: () => {
           this.rows.set([]);
           this.totalCount.set(0);
+          this.toast.showError('Fehler beim Laden der Daten.');
         },
       });
   }
@@ -158,6 +164,7 @@ export class AppComponent implements OnInit {
         this.tableItems.set([]);
         this.viewItems.set([]);
         this.loadingRows.set(false);
+        this.toast.showError('Fehler beim Laden der Tabellen/Ansichten.');
       },
     });
   }
