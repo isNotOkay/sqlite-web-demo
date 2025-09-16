@@ -1,9 +1,20 @@
 [
   {
     "context": [
-      "/api/web-viewer"
+      "/api",
+      "/openapi"
     ],
     "target": "http://localhost:4713",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  },
+  {
+    "context": [
+      "/hubs"
+    ],
+    "target": "http://localhost:4713",
+    "ws": true,
     "secure": false,
     "changeOrigin": true,
     "logLevel": "debug"
