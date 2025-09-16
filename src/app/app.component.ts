@@ -78,6 +78,13 @@ export class AppComponent implements OnInit {
     this.loadTablesAndViews();
   }
 
+  /** Programmatically select by type + id */
+  protected selectById(relationType: RelationType, id: string): void {
+    const pool = relationType === RelationType.Table ? this.tableItems() : this.viewItems();
+    const found = pool.find((i) => i.id === id);
+    if (found) this.selectListItem(found);
+  }
+
   private loadRows(): void {
     const listItem = this.selectedListItem();
     if (!listItem) return;
@@ -86,7 +93,14 @@ export class AppComponent implements OnInit {
     this.loadRowsSubscription?.unsubscribe();
 
     this.loadRowsSubscription = this.dataApiService
-      .loadRows(listItem.relationType, listItem.id, this.pageIndex(), this.pageSize(), this.sortBy(), this.sortDir())
+      .loadRows(
+        listItem.relationType,
+        listItem.id,
+        this.pageIndex(),
+        this.pageSize(),
+        this.sortBy(),
+        this.sortDir()
+      )
       .pipe(finalize(() => this.loadingRows.set(false)))
       .subscribe({
         next: (result: PagedResultApiModel<RowModel>) => {
@@ -109,7 +123,12 @@ export class AppComponent implements OnInit {
         this.tableItems.set(tableItems);
         this.viewItems.set(viewItems);
 
+        // Pick first as a fallback (will be overwritten below if vw_holidays exists)
         this.selectFirstAvailable();
+
+        // ✅ Test selection: auto-select the view "vw_holidays" when available
+        this.selectById(RelationType.View, 'vw_holidays');
+
         this.loadedTablesAndViews.set(true);
       },
       error: () => {

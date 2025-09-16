@@ -53,8 +53,7 @@
         <tr mat-header-row *matHeaderRowDef="columnNames(); sticky: true"></tr>
         <tr mat-row *matRowDef="let row; columns: columnNames()"></tr>
 
-        <!-- Empty state -->
-        @if (loadedTablesAndViews() && !loadingRows() && totalCount() === 0) {
+        @if (loadedTablesAndViews() && !loadingRows() && rows().length === 0) {
           <tr class="no-data-row" *matNoDataRow>
             <td class="mat-mdc-cell" [attr.colspan]="columnNames().length || 1">
               <div class="empty-state">keine Daten vorhanden</div>
