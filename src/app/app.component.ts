@@ -90,15 +90,17 @@ export class AppComponent implements OnInit {
 
     // On create: reload and select the created item
     this.signalR.onCreateRelation$.subscribe((evt: CreateRelationEvent) => {
+      const noun = evt.type === 'view' ? 'Ansicht' : 'Tabelle';
       this.reloadTablesAndViewsAndSelect(evt.type, evt.name);
-      this.toast.show(`Neu erstellt: ${evt.type} ${evt.name}`);
+      this.toast.show(`${noun} "${evt.name}" wurde erstellt.`);
     });
 
-    // On delete: reload; keep previous selection if it still exists; clear it if it was deleted
+// On delete: reload; keep previous selection if it still exists; clear it if it was deleted
     this.signalR.onDeleteRelation$.subscribe((evt: DeleteRelationEvent) => {
       const prev = this.selectedListItem(); // snapshot before reload
       this.reloadTablesAndViewsPreservingSelection(prev, evt);
-      this.toast.show(`Gelöscht: ${evt.type} ${evt.name}`);
+      const noun = evt.type === 'view' ? 'Ansicht' : 'Tabelle';
+      this.toast.show(`${noun} "${evt.name}" wurde gelöscht.`);
     });
 
     // Initial load
