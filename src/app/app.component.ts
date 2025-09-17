@@ -166,7 +166,7 @@ export class AppComponent implements OnInit {
         this.tableItems.set([]);
         this.viewItems.set([]);
         this.loadingRows.set(false);
-        this.toast.showError('Fehler beim Laden der Tabellen/Ansichten.');
+        this.toast.showError('Fehler beim Laden der Tabellen und Ansichten.');
       },
     });
   }
@@ -181,7 +181,7 @@ export class AppComponent implements OnInit {
         const relType = type === 'view' ? RelationType.View : RelationType.Table;
         this.selectById(relType, name);
       },
-      error: () => this.toast.showError('Fehler beim Aktualisieren der Tabellen/Ansichten.'),
+      error: () => this.toast.showError('Fehler beim Aktualisieren der Tabellen und Ansichten.'),
     });
   }
 
@@ -231,7 +231,7 @@ export class AppComponent implements OnInit {
           this.loadingRows.set(false);
         }
       },
-      error: () => this.toast.showError('Fehler beim Aktualisieren der Tabellen/Ansichten.'),
+      error: () => this.toast.showError('Fehler beim Aktualisieren der Tabellen und Ansichten.'),
     });
   }
 
