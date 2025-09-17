@@ -150,66 +150,72 @@ export class AppComponent implements OnInit {
     return _.isNumber(value);
   }
 
-  // ───────────────────────────────────────────────────────────────
-  // DRY: relation loading + selection strategies
-  // ───────────────────────────────────────────────────────────────
-
   /**
-   * Reload tables & views. Strategy can be:
-   * - { initial: true } → pick first (and optional demo auto-select)
-   * - { select }        → select a specific object by type+name
-   * - { preserve, deleted? } → keep previous if still exists, otherwise clear (used on delete)
+   * Reload tables & views.
+   * Strategies:
+   *  - { initial: true }               → pick vw_holidays if present, else first item
+   *  - { select: {type,name} }         → select a specific object
+   *  - { preserve, deleted? }          → keep previous if it still exists, else clear
    */
   private reloadRelations(opts: {
     initial?: boolean;
     select?: SelectTarget;
     preserve?: ListItemModel | null;
-    deleted?: SelectTarget
+    deleted?: SelectTarget;
   } = {}): void {
     this.fetchRelations().subscribe({
       next: ([tablesRes, viewsRes]) => {
         this.setRelations(tablesRes, viewsRes);
-
-        // Decide next selection
-        let next: ListItemModel | null = null;
-
-        if (opts.select) {
-          const relType = opts.select.type === 'view' ? RelationType.View : RelationType.Table;
-          next = this.findInLists(relType, opts.select.name);
-        } else if (opts.preserve) {
-          // If deleted matches previous, force clear; else try to re-find previous
-          const wasDeleted =
-            opts.deleted &&
-            (opts.preserve.relationType === (opts.deleted.type === 'view' ? RelationType.View : RelationType.Table)) &&
-            opts.preserve.id === opts.deleted.name;
-
-          next = wasDeleted ? null : this.findInLists(opts.preserve.relationType, opts.preserve.id);
-        } else if (opts.initial) {
-          // initial fallback
-          next = this.tableItems()[0] ?? this.viewItems()[0] ?? null;
-        }
-
-        // Apply selection
-        if (next) {
-          // preserve paging/sort when we just refreshed the lists during runtime (create/delete),
-          // but reset on very first initial load so the table starts clean
-          const preservePagingAndSort = !opts.initial;
-          this.applySelection(next, preservePagingAndSort);
-
-          // optional demo auto-select
-          if (opts.initial) {
-            this.selectById(RelationType.View, 'vw_holidays');
-            this.loadedTablesAndViews.set(true);
-          }
-        } else {
-          // No selection → clear view
-          this.clearSelectionAndView();
-          if (opts.initial) this.loadedTablesAndViews.set(true);
-        }
+        const next = this.resolveNextSelection(opts);
+        this.applyAfterReload(next, !!opts.initial);
       },
       error: () => this.toast.showError('Fehler beim Aktualisieren der Tabellen und Ansichten.'),
     });
   }
+
+  /** Decide what should be selected after a reload */
+  private resolveNextSelection(opts: {
+    initial?: boolean;
+    select?: SelectTarget;
+    preserve?: ListItemModel | null;
+    deleted?: SelectTarget;
+  }): ListItemModel | null {
+    // explicit select by type+name (e.g., on create)
+    if (opts.select) {
+      const type = opts.select.type === 'view' ? RelationType.View : RelationType.Table;
+      return this.findInLists(type, opts.select.name);
+    }
+
+    // preserve previous (e.g., on delete)
+    if (opts.preserve) {
+      const delType = opts.deleted?.type === 'view' ? RelationType.View : RelationType.Table;
+      const wasDeleted =
+        !!opts.deleted &&
+        opts.preserve.relationType === delType &&
+        opts.preserve.id === opts.deleted.name;
+
+      return wasDeleted ? null : this.findInLists(opts.preserve.relationType, opts.preserve.id);
+    }
+
+    // initial load: pick first table, else first view
+    if (opts.initial) {
+      return this.tableItems()[0] ?? this.viewItems()[0] ?? null;
+    }
+
+    return null;
+  }
+
+  /** Apply result of selection decision and finish UI state updates */
+  private applyAfterReload(next: ListItemModel | null, initial: boolean): void {
+    if (next) {
+      // preserve paging/sort for runtime refreshes; reset only on very first load
+      this.applySelection(next, /*preservePagingAndSort*/ !initial);
+    } else {
+      this.clearSelectionAndView();
+    }
+    if (initial) this.loadedTablesAndViews.set(true);
+  }
+
 
   /** Fetch tables & views in parallel */
   private fetchRelations(): Observable<[PagedResultApiModel<RelationApiModel>, PagedResultApiModel<RelationApiModel>]> {
