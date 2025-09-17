@@ -111,17 +111,6 @@ export class AppComponent implements OnInit {
     this.reloadRelations({initial: true});
   }
 
-  // ───────────────────────────────────────────────────────────────
-  // Public actions
-  // ───────────────────────────────────────────────────────────────
-  /** Programmatically select by type + id */
-  protected selectById(relationType: RelationType, id: string): void {
-    const pool = relationType === RelationType.Table ? this.tableItems() : this.viewItems();
-    const found = pool.find((i) => i.id === id);
-    if (found) this.applySelection(found, /*preservePagingAndSort*/ true);
-    else this.toast.showError(`Relation ${id} nicht gefunden in ${relationType}.`);
-  }
-
   protected selectListItem(item: ListItemModel): void {
     const selectedItem = this.selectedListItem();
     if (selectedItem?.id === item.id && selectedItem?.relationType === item.relationType) return;
