@@ -31,7 +31,7 @@ import { PagedResultApiModel } from './models/api/paged-result.api-model';
 import { NavSectionComponent } from './nav-section/nav-section.component';
 import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE } from './constants/api-params.constants';
 import { RowModel } from './models/row.model';
-import { SignalRService, SelectRelationEvent } from './services/signalr.service';
+import { SignalRService, CreateRelationEvent, DeleteRelationEvent } from './services/signalr.service';
 import { ToastService } from './services/toast.service';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 
@@ -75,27 +75,33 @@ export class AppComponent implements OnInit {
   protected pageSize = signal(DEFAULT_PAGE_SIZE);
   protected sortBy = signal<string | null>(null);
   protected sortDir = signal<'asc' | 'desc'>('asc');
-  protected sort = viewChild.required(MatSort);
+
+  // ⬇️ Make MatSort view child OPTIONAL to avoid NG0951 when table isn't rendered yet
+  protected sort = viewChild(MatSort); // returns MatSort | undefined
 
   private loadRowsSubscription?: Subscription;
   private readonly dataApiService = inject(DataApiService);
   private readonly signalR = inject(SignalRService);
   private readonly toast = inject(ToastService);
 
-  /** If a SelectRelation event arrives before data is loaded, buffer it here */
-  private pendingSelect?: SelectRelationEvent;
-
   ngOnInit(): void {
-    // Start SignalR and subscribe to server-driven selections
+    // Start SignalR
     this.signalR.start();
-    this.signalR.onSelectRelation$.subscribe((evt) => {
-      if (!this.loadedTablesAndViews()) {
-        this.pendingSelect = evt;
-      } else {
-        this.applyServerSelection(evt);
-      }
+
+    // On create: reload and select the created item
+    this.signalR.onCreateRelation$.subscribe((evt: CreateRelationEvent) => {
+      this.reloadTablesAndViewsAndSelect(evt.type, evt.name);
+      this.toast.show(`Neu erstellt: ${evt.type} ${evt.name}`);
     });
 
+    // On delete: reload; keep previous selection if it still exists; clear it if it was deleted
+    this.signalR.onDeleteRelation$.subscribe((evt: DeleteRelationEvent) => {
+      const prev = this.selectedListItem(); // snapshot before reload
+      this.reloadTablesAndViewsPreservingSelection(prev, evt);
+      this.toast.show(`Gelöscht: ${evt.type} ${evt.name}`);
+    });
+
+    // Initial load
     this.loadTablesAndViews();
   }
 
@@ -104,7 +110,7 @@ export class AppComponent implements OnInit {
     const pool = relationType === RelationType.Table ? this.tableItems() : this.viewItems();
     const found = pool.find((i) => i.id === id);
     if (found) this.selectListItem(found);
-    else this.toast.showError(`Relation ${id} not found in ${relationType}.`);
+    else this.toast.showError(`Relation ${id} nicht gefunden in ${relationType}.`);
   }
 
   private loadRows(): void {
@@ -146,19 +152,13 @@ export class AppComponent implements OnInit {
         this.tableItems.set(tableItems);
         this.viewItems.set(viewItems);
 
-        // Pick first as a fallback (will be overwritten below if vw_holidays exists)
+        // Choose first as a fallback; can be replaced by signals/events later
         this.selectFirstAvailable();
 
-        // ✅ Optional auto-select
+        // Optional demo auto-select
         this.selectById(RelationType.View, 'vw_holidays');
 
         this.loadedTablesAndViews.set(true);
-
-        // Apply any pending server selection now that data is ready
-        if (this.pendingSelect) {
-          this.applyServerSelection(this.pendingSelect);
-          this.pendingSelect = undefined;
-        }
       },
       error: () => {
         this.tableItems.set([]);
@@ -166,6 +166,70 @@ export class AppComponent implements OnInit {
         this.loadingRows.set(false);
         this.toast.showError('Fehler beim Laden der Tabellen/Ansichten.');
       },
+    });
+  }
+
+  /** Reload lists then select a specific relation (used for create) */
+  private reloadTablesAndViewsAndSelect(type: 'table' | 'view', name: string): void {
+    forkJoin([this.dataApiService.loadTables(), this.dataApiService.loadViews()]).subscribe({
+      next: ([tablesRes, viewsRes]) => {
+        this.tableItems.set(this.toListItems(tablesRes?.items ?? [], RelationType.Table));
+        this.viewItems.set(this.toListItems(viewsRes?.items ?? [], RelationType.View));
+
+        const relType = type === 'view' ? RelationType.View : RelationType.Table;
+        this.selectById(relType, name);
+      },
+      error: () => this.toast.showError('Fehler beim Aktualisieren der Tabellen/Ansichten.'),
+    });
+  }
+
+  /**
+   * Reload lists and preserve selection if it still exists; if the deleted item was selected, clear the selection.
+   */
+  private reloadTablesAndViewsPreservingSelection(
+    previous: ListItemModel | null,
+    deleted?: { type: 'table' | 'view'; name: string }
+  ): void {
+    forkJoin([this.dataApiService.loadTables(), this.dataApiService.loadViews()]).subscribe({
+      next: ([tablesRes, viewsRes]) => {
+        // update lists
+        const tables = this.toListItems(tablesRes?.items ?? [], RelationType.Table);
+        const views  = this.toListItems(viewsRes?.items ?? [], RelationType.View);
+        this.tableItems.set(tables);
+        this.viewItems.set(views);
+
+        // decide next selection
+        let nextSelection: ListItemModel | null = null;
+
+        // if previously selected equals the deleted one -> no selection
+        const deletedType = deleted?.type === 'view' ? RelationType.View : RelationType.Table;
+        const deletedId   = deleted?.name ?? '';
+
+        if (
+          previous &&
+          (!deleted || !(previous.relationType === deletedType && previous.id === deletedId))
+        ) {
+          // try to find previous in the new lists
+          const pool = previous.relationType === RelationType.Table ? tables : views;
+          nextSelection = pool.find(i => i.id === previous.id) ?? null;
+        }
+
+        this.selectedListItem.set(nextSelection);
+
+        // update columns + rows
+        if (nextSelection) {
+          this.updateColumns();
+          // keep sort/page index as-is when possible
+          this.loadRows();
+        } else {
+          // clear view
+          this.columnNames.set([]);
+          this.rows.set([]);
+          this.totalCount.set(0);
+          this.loadingRows.set(false);
+        }
+      },
+      error: () => this.toast.showError('Fehler beim Aktualisieren der Tabellen/Ansichten.'),
     });
   }
 
@@ -238,11 +302,5 @@ export class AppComponent implements OnInit {
 
   protected isNumber(value: unknown): boolean {
     return _.isNumber(value);
-  }
-
-  /** Apply a server-driven selection */
-  private applyServerSelection(evt: SelectRelationEvent): void {
-    const relType = evt.type === 'view' ? RelationType.View : RelationType.Table;
-    this.selectById(relType, evt.name);
   }
 }

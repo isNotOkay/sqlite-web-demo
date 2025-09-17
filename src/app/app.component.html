@@ -30,46 +30,49 @@
       <app-loading-indicator/>
     }
 
-    <div class="table-container">
-      <table
-        class="striped"
-        mat-table
-        matSort
-        [dataSource]="rows()"
-        [matSortDisabled]="columnNames().length === 0"
-        (matSortChange)="onSort($event)"
-      >
-        @for (columnName of columnNames(); track columnName) {
-          <ng-container [matColumnDef]="columnName">
-            <th mat-header-cell *matHeaderCellDef [mat-sort-header]="columnName">
-              {{ columnName }}
-            </th>
-            <td mat-cell *matCellDef="let row" [class.numeric]="isNumber(row[columnName])">
-              {{ row[columnName] }}
+    @if (selectedListItem()) {
+
+      <div class="table-container">
+        <table
+          class="striped"
+          mat-table
+          matSort
+          [dataSource]="rows()"
+          [matSortDisabled]="columnNames().length === 0"
+          (matSortChange)="onSort($event)">
+
+          @for (columnName of columnNames(); track columnName) {
+            <ng-container [matColumnDef]="columnName">
+              <th mat-header-cell *matHeaderCellDef [mat-sort-header]="columnName">
+                {{ columnName }}
+              </th>
+              <td mat-cell *matCellDef="let row" [class.numeric]="isNumber(row[columnName])">
+                {{ row[columnName] }}
+              </td>
+            </ng-container>
+          }
+
+          <tr mat-header-row *matHeaderRowDef="columnNames(); sticky: true"></tr>
+          <tr mat-row *matRowDef="let row; columns: columnNames()"></tr>
+
+          <tr class="no-data-row" *matNoDataRow>
+            <td class="mat-mdc-cell" [attr.colspan]="columnNames().length || 1">
+              <div class="empty-state">keine Daten vorhanden</div>
             </td>
-          </ng-container>
-        }
+          </tr>
+        </table>
+      </div>
 
-        <tr mat-header-row *matHeaderRowDef="columnNames(); sticky: true"></tr>
-        <tr mat-row *matRowDef="let row; columns: columnNames()"></tr>
-
-        <tr class="no-data-row" *matNoDataRow>
-          <td class="mat-mdc-cell" [attr.colspan]="columnNames().length || 1">
-            <div class="empty-state">keine Daten vorhanden</div>
-          </td>
-        </tr>
-      </table>
-    </div>
-
-    <mat-paginator
-      class="footer-paginator"
-      showFirstLastButtons
-      [length]="totalCount()"
-      [pageIndex]="pageIndex()"
-      [pageSize]="pageSize()"
-      [hidePageSize]="true"
-      (page)="onPage($event)"
-    >
-    </mat-paginator>
+      <mat-paginator
+        class="footer-paginator"
+        showFirstLastButtons
+        [length]="totalCount()"
+        [pageIndex]="pageIndex()"
+        [pageSize]="pageSize()"
+        [hidePageSize]="true"
+        (page)="onPage($event)">
+      </mat-paginator>
+    }
   </section>
+
 </div>
