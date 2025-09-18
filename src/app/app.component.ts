@@ -82,11 +82,9 @@ export class AppComponent implements OnInit {
   protected readonly sortBy = signal<string | null>(null);
   protected readonly sortDir = signal<'asc' | 'desc'>('asc');
   protected readonly sort = viewChild(MatSort);
-
   private readonly apiService = inject(ApiService);
   private readonly signalRService = inject(SignalRService);
   private readonly notificationService = inject(NotificationService);
-
   private loadRowsSubscription?: Subscription;
 
   ngOnInit(): void {
@@ -125,7 +123,7 @@ export class AppComponent implements OnInit {
 
     // CREATE → after reload, select the created object
     this.signalRService.onCreateRelation$.subscribe((event: CreateRelationEvent) => {
-      this.loadTablesAndViews({ relationType: event.type, name: event.name });
+      this.loadTablesAndViews({relationType: event.type, name: event.name});
       this.notificationService.info(`${getRelationTypeName(event.type)} "${event.name}" wurde erstellt.`);
     });
 
@@ -154,8 +152,6 @@ export class AppComponent implements OnInit {
    * Otherwise, keep the current selection if it still exists; if not, clear.
    */
   private loadTablesAndViews(selectTarget?: SelectTarget): void {
-    const current = this.selectedListItem();
-
     forkJoin([this.apiService.loadTables(), this.apiService.loadViews()]).subscribe({
       next: ([tablesResponse, viewsResponse]) => {
         this.tableItems.set(this.toListItems(tablesResponse.items, RelationType.Table));
@@ -164,14 +160,9 @@ export class AppComponent implements OnInit {
 
         let listItem: ListItemModel | null = null;
 
-        // Prefer explicit selection (e.g., just created)
         if (selectTarget) {
           const type = selectTarget.relationType === RelationType.View ? RelationType.View : RelationType.Table;
           listItem = this.findInLists(type, selectTarget.name);
-        }
-        // Otherwise, try to re-select the previously selected item
-        else if (current) {
-          listItem = this.findInLists(current.relationType, current.id);
         }
 
         if (listItem) {
