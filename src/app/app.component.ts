@@ -139,7 +139,10 @@ export class AppComponent implements OnInit {
 
     // DELETE → reload; keep previous selection if it still exists; clear it if it was deleted
     this.signalRService.onDeleteRelation$.subscribe((event: DeleteRelationEvent): void => {
-      this.loadTablesAndViews({preserve: this.selectedListItem(), deleted: {relationType: event.type, name: event.name}});
+      this.loadTablesAndViews({
+        preserve: this.selectedListItem(),
+        deleted: {relationType: event.type, name: event.name}
+      });
       this.notificationService.info(`${getRelationTypeName(event.type)} "${event.name}" wurde gelöscht.`);
     });
   }
@@ -168,7 +171,7 @@ export class AppComponent implements OnInit {
         if (listItem) {
           this.updateSelectedListItem(listItem);
         } else {
-          this.clearSelectionAndView();
+          this.clearSelectedListItem();
         }
       },
       error: () => this.notificationService.error('Fehler beim Aktualisieren der Tabellen und Ansichten.'),
@@ -203,7 +206,7 @@ export class AppComponent implements OnInit {
   }
 
 
-  private clearSelectionAndView(): void {
+  private clearSelectedListItem(): void {
     this.selectedListItem.set(null);
     this.columnNames.set([]);
     this.rows.set([]);
