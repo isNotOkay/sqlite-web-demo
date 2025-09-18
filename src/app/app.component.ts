@@ -35,11 +35,6 @@ import {MatSnackBarModule} from '@angular/material/snack-bar';
 import {IsNumberPipe} from './pipes/is-numper.pipe';
 import {getRelationTypeName} from './utils/sql.util';
 
-interface SelectTarget {
-  relationType: RelationType;
-  name: string;
-}
-
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -123,7 +118,7 @@ export class AppComponent implements OnInit {
 
     // CREATE → after reload, select the created object
     this.signalRService.onCreateRelation$.subscribe((event: CreateRelationEvent) => {
-      this.loadTablesAndViews({relationType: event.relationType, name: event.name});
+      this.loadTablesAndViews(event);
       this.notificationService.info(`${getRelationTypeName(event.relationType)} "${event.name}" wurde erstellt.`);
     });
 
@@ -148,10 +143,10 @@ export class AppComponent implements OnInit {
 
   /**
    * Reload tables and views.
-   * If a SelectTarget is provided (e.g. after CREATE), prefer selecting that.
+   * If a CreateRelationEvent is provided, prefer selecting that newly created relation.
    * Otherwise, keep the current selection if it still exists; if not, clear.
    */
-  private loadTablesAndViews(selectTarget?: SelectTarget): void {
+  private loadTablesAndViews(createRelationEvent?: CreateRelationEvent): void {
     forkJoin([this.apiService.loadTables(), this.apiService.loadViews()]).subscribe({
       next: ([tablesResponse, viewsResponse]) => {
         this.tableItems.set(this.toListItems(tablesResponse.items, RelationType.Table));
@@ -160,9 +155,10 @@ export class AppComponent implements OnInit {
 
         let listItem: ListItemModel | null = null;
 
-        if (selectTarget) {
-          const type = selectTarget.relationType === RelationType.View ? RelationType.View : RelationType.Table;
-          listItem = this.findInLists(type, selectTarget.name);
+        if (createRelationEvent) {
+          const type =
+            createRelationEvent.relationType === RelationType.View ? RelationType.View : RelationType.Table;
+          listItem = this.findInLists(type, createRelationEvent.name);
         }
 
         if (listItem) {
