@@ -1,18 +1,19 @@
-import { Injectable } from '@angular/core';
+import {Injectable} from '@angular/core';
 import * as signalR from '@microsoft/signalr';
-import { Observable, Subject } from 'rxjs';
+import {Observable, Subject} from 'rxjs';
+import {RelationType} from '../enums/relation-type.enum';
 
 export interface CreateRelationEvent {
-  type: 'table' | 'view';
+  type: RelationType;
   name: string;
 }
 
 export interface DeleteRelationEvent {
-  type: 'table' | 'view';
+  type: RelationType;
   name: string;
 }
 
-@Injectable({ providedIn: 'root' })
+@Injectable({providedIn: 'root'})
 export class SignalRService {
   private hub?: signalR.HubConnection;
 
@@ -34,19 +35,19 @@ export class SignalRService {
 
     // 🔔 create
     this.hub.on('CreateRelation', (payload: any) => {
-      const type = (payload?.type ?? '').toString().toLowerCase() as 'table' | 'view';
+      const type = (payload?.type ?? '').toString().toLowerCase() as RelationType;
       const name = (payload?.name ?? '').toString();
       if ((type === 'table' || type === 'view') && name) {
-        this.createRelationSubject.next({ type, name });
+        this.createRelationSubject.next({type, name});
       }
     });
 
     // 🔔 delete
     this.hub.on('DeleteRelation', (payload: any) => {
-      const type = (payload?.type ?? '').toString().toLowerCase() as 'table' | 'view';
+      const type = (payload?.type ?? '').toString().toLowerCase() as RelationType;
       const name = (payload?.name ?? '').toString();
       if ((type === 'table' || type === 'view') && name) {
-        this.deleteRelationSubject.next({ type, name });
+        this.deleteRelationSubject.next({type, name});
       }
     });
 

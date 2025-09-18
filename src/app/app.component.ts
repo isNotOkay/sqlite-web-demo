@@ -33,6 +33,7 @@ import {CreateRelationEvent, DeleteRelationEvent, SignalRService} from './servic
 import {NotificationService} from './services/notification.service';
 import {MatSnackBarModule} from '@angular/material/snack-bar';
 import {IsNumberPipe} from './pipes/is-numper.pipe';
+import {getRelationTypeName} from './utils/sql.util';
 
 interface SelectTarget {
   type: 'table' | 'view';
