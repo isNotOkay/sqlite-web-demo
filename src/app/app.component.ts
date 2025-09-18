@@ -104,13 +104,13 @@ export class AppComponent implements OnInit {
     }
 
     this.updateColumns();
-    this.loadRows();
+    this.loadTableData();
   }
 
   protected onPage(pageEvent: PageEvent): void {
     this.pageIndex.set(pageEvent.pageIndex);
     this.pageSize.set(pageEvent.pageSize);
-    this.loadRows();
+    this.loadTableData();
   }
 
   private listenToSignalREvents(): void {
@@ -138,7 +138,7 @@ export class AppComponent implements OnInit {
       this.sortDir.set(sort.direction as 'asc' | 'desc');
     }
     this.pageIndex.set(0);
-    this.loadRows();
+    this.loadTableData();
   }
 
   /**
@@ -198,7 +198,7 @@ export class AppComponent implements OnInit {
     }));
   }
 
-  private loadRows(): void {
+  private loadTableData(): void {
     const listItem = this.selectedListItem();
     if (!listItem) return;
 
@@ -206,7 +206,7 @@ export class AppComponent implements OnInit {
     this.loadRowsSubscription?.unsubscribe();
 
     this.loadRowsSubscription = this.apiService
-      .loadRows(
+      .loadTableData(
         listItem.relationType,
         listItem.id,
         this.pageIndex(),

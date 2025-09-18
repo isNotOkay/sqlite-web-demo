@@ -39,7 +39,7 @@ export class ApiService {
     );
   }
 
-  loadRows(
+  loadTableData(
     relationType: RelationType,
     id: string,
     pageIndex: number,
