@@ -103,7 +103,7 @@ export class AppComponent implements OnInit {
       sort.direction = '';
     }
 
-    this.updateColumns();
+    this.updateColumnNames();
     this.loadTableData();
   }
 
@@ -184,9 +184,8 @@ export class AppComponent implements OnInit {
     this.loadingRows.set(false);
   }
 
-  private updateColumns(): void {
-    const cols = this.selectedListItem()?.columns ?? [];
-    this.columnNames.set(cols);
+  private updateColumnNames(): void {
+    this.columnNames.set(this.selectedListItem()?.columnNames ?? []);
   }
 
   private toListItems(relations: RelationApiModel[] | null | undefined, type: RelationType): ListItemModel[] {
@@ -194,7 +193,7 @@ export class AppComponent implements OnInit {
       id: relation.name,
       label: relation.name,
       relationType: type,
-      columns: relation.columns ?? [],
+      columnNames: relation.columnNames ?? [],
     }));
   }
 
