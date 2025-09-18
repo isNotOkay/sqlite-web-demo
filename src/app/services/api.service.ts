@@ -8,7 +8,7 @@ import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE } from '../constants/api-params.c
 import { RowModel } from '../models/row.model';
 
 @Injectable({ providedIn: 'root' })
-export class DataApiService {
+export class ApiService {
   private http = inject(HttpClient);
 
   private readonly apiPrefix = '/api/web-viewer';

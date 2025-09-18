@@ -2,7 +2,7 @@ import {inject, Injectable} from '@angular/core';
 import {MatSnackBar} from '@angular/material/snack-bar';
 
 @Injectable({providedIn: 'root'})
-export class ToastService {
+export class NotificationService {
   private snackBar = inject(MatSnackBar);
 
   show(message: string, action = 'Schließen', duration = 6000): void {

@@ -20,7 +20,7 @@ import {MatSort, MatSortHeader, Sort} from '@angular/material/sort';
 
 import {finalize, forkJoin, Observable, Subscription} from 'rxjs';
 
-import {DataApiService} from './services/data-api.service';
+import {ApiService} from './services/api.service';
 import {LoadingIndicator} from './components/loading-indicator/loading-indicator';
 import {RelationType} from './enums/relation-type.enum';
 import {ListItemModel} from './models/list-item.model';
@@ -30,7 +30,7 @@ import {NavSectionComponent} from './nav-section/nav-section.component';
 import {DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE} from './constants/api-params.constants';
 import {RowModel} from './models/row.model';
 import {CreateRelationEvent, DeleteRelationEvent, SignalRService} from './services/signalr.service';
-import {ToastService} from './services/toast.service';
+import {NotificationService} from './services/notification.service';
 import {MatSnackBarModule} from '@angular/material/snack-bar';
 import {IsNumberPipe} from './pipes/is-numper.pipe';
 
@@ -81,9 +81,9 @@ export class AppComponent implements OnInit {
   protected readonly sortBy = signal<string | null>(null);
   protected readonly sortDir = signal<'asc' | 'desc'>('asc');
   protected readonly sort = viewChild(MatSort);
-  private readonly dataApiService = inject(DataApiService);
-  private readonly signalR = inject(SignalRService);
-  private readonly toast = inject(ToastService);
+  private readonly apiService = inject(ApiService);
+  private readonly signalRService = inject(SignalRService);
+  private readonly notificationService = inject(NotificationService);
   private loadRowsSubscription?: Subscription;
 
   ngOnInit(): void {
@@ -105,18 +105,18 @@ export class AppComponent implements OnInit {
 
 
   private listenToSignalREvents(): void {
-    this.signalR.start();
+    this.signalRService.start();
 
     // CREATE → reload and select created object
-    this.signalR.onCreateRelation$.subscribe((event: CreateRelationEvent) => {
+    this.signalRService.onCreateRelation$.subscribe((event: CreateRelationEvent) => {
       this.reloadTablesAndViews({select: {type: event.type, name: event.name}});
-      this.toast.show(`${getRelationTypeName(event.type)} "${event.name}" wurde erstellt.`);
+      this.notificationService.show(`${getRelationTypeName(event.type)} "${event.name}" wurde erstellt.`);
     });
 
     // DELETE → reload; keep previous selection if it still exists; clear it if it was deleted
-    this.signalR.onDeleteRelation$.subscribe((event: DeleteRelationEvent): void => {
+    this.signalRService.onDeleteRelation$.subscribe((event: DeleteRelationEvent): void => {
       this.reloadTablesAndViews({preserve: this.selectedListItem(), deleted: {type: event.type, name: event.name}});
-      this.toast.show(`${getRelationTypeName(event.type)} "${event.name}" wurde gelöscht.`);
+      this.notificationService.show(`${getRelationTypeName(event.type)} "${event.name}" wurde gelöscht.`);
     });
   }
 
@@ -145,7 +145,7 @@ export class AppComponent implements OnInit {
         const listItem = this.getNextSelectedListItem(opts);
         this.updateListAndSelectionAfterReload(listItem, Boolean(opts.initial));
       },
-      error: () => this.toast.showError('Fehler beim Aktualisieren der Tabellen und Ansichten.'),
+      error: () => this.notificationService.showError('Fehler beim Aktualisieren der Tabellen und Ansichten.'),
     });
   }
 
@@ -192,7 +192,7 @@ export class AppComponent implements OnInit {
 
 
   private loadTablesAndViews(): Observable<[PagedResultApiModel<RelationApiModel>, PagedResultApiModel<RelationApiModel>]> {
-    return forkJoin([this.dataApiService.loadTables(), this.dataApiService.loadViews()]);
+    return forkJoin([this.apiService.loadTables(), this.apiService.loadViews()]);
   }
 
   private setRelations(
@@ -256,7 +256,7 @@ export class AppComponent implements OnInit {
     this.loadingRows.set(true);
     this.loadRowsSubscription?.unsubscribe();
 
-    this.loadRowsSubscription = this.dataApiService
+    this.loadRowsSubscription = this.apiService
       .loadRows(
         listItem.relationType,
         listItem.id,
@@ -274,7 +274,7 @@ export class AppComponent implements OnInit {
         error: () => {
           this.rows.set([]);
           this.totalCount.set(0);
-          this.toast.showError('Fehler beim Laden der Daten.');
+          this.notificationService.showError('Fehler beim Laden der Daten.');
         },
       });
   }
