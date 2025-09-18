@@ -40,6 +40,17 @@ interface SelectTarget {
   name: string
 }
 
+interface ReloadSelectionOptions {
+  /** Mark as very first load (affects paging/sort reset and loaded flag). */
+  initial?: boolean;
+  /** Explicit item to select after reload (e.g., after a create). */
+  select?: SelectTarget;
+  /** Try to keep this previously selected item, unless it was deleted. */
+  preserve?: ListItemModel | null;
+  /** Item that was just deleted (used to detect if preserve should be cleared). */
+  deleted?: SelectTarget;
+}
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -134,12 +145,7 @@ export class AppComponent implements OnInit {
     this.loadRows();
   }
 
-  private reloadTablesAndViews(options: {
-    initial?: boolean;
-    select?: SelectTarget;
-    preserve?: ListItemModel | null;
-    deleted?: SelectTarget;
-  } = {}): void {
+  private reloadTablesAndViews(options: ReloadSelectionOptions = {}): void {
     forkJoin([this.apiService.loadTables(), this.apiService.loadViews()]).subscribe({
       next: ([tablesResponse, viewsResponse]) => {
         this.setRelations(tablesResponse, viewsResponse);
@@ -149,12 +155,7 @@ export class AppComponent implements OnInit {
     });
   }
 
-  private resolveNextSelectedListItem(options: {
-    initial?: boolean;
-    select?: SelectTarget;
-    preserve?: ListItemModel | null;
-    deleted?: SelectTarget;
-  }): ListItemModel | null {
+  private resolveNextSelectedListItem(options: ReloadSelectionOptions): ListItemModel | null {
     // explicit select by type+name (e.g., on create)
     if (options.select) {
       const type = options.select.type === 'view' ? RelationType.View : RelationType.Table;
