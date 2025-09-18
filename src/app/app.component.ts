@@ -37,16 +37,7 @@ import {getRelationTypeName} from './utils/sql.util';
 
 interface SelectTarget {
   relationType: RelationType;
-  name: string
-}
-
-interface LoadSelectionOptions {
-  /** Explicit item to select after reload (e.g., after a create). */
-  select?: SelectTarget;
-  /** Try to keep this previously selected item, unless it was deleted. */
-  preserve?: ListItemModel | null;
-  /** Item that was just deleted (used to detect if preserve should be cleared). */
-  deleted?: SelectTarget;
+  name: string;
 }
 
 @Component({
@@ -91,10 +82,15 @@ export class AppComponent implements OnInit {
   protected readonly sortBy = signal<string | null>(null);
   protected readonly sortDir = signal<'asc' | 'desc'>('asc');
   protected readonly sort = viewChild(MatSort);
+
   private readonly apiService = inject(ApiService);
   private readonly signalRService = inject(SignalRService);
   private readonly notificationService = inject(NotificationService);
+
   private loadRowsSubscription?: Subscription;
+
+  /** When a CREATE event arrives, we stash the desired selection here until the next reload completes. */
+  private pendingSelect: SelectTarget | null = null;
 
   ngOnInit(): void {
     this.listenToSignalREvents();
@@ -127,26 +123,22 @@ export class AppComponent implements OnInit {
     this.loadRows();
   }
 
-
   private listenToSignalREvents(): void {
     this.signalRService.start();
 
-    // CREATE → reload and select created object
+    // CREATE → after reload, select the created object
     this.signalRService.onCreateRelation$.subscribe((event: CreateRelationEvent) => {
-      this.loadTablesAndViews({select: {relationType: event.type, name: event.name}});
+      this.pendingSelect = { relationType: event.type, name: event.name };
+      this.loadTablesAndViews();
       this.notificationService.info(`${getRelationTypeName(event.type)} "${event.name}" wurde erstellt.`);
     });
 
-    // DELETE → reload; keep previous selection if it still exists; clear it if it was deleted
+    // DELETE → just reload; if the currently selected item still exists it stays, otherwise the page clears
     this.signalRService.onDeleteRelation$.subscribe((event: DeleteRelationEvent): void => {
-      this.loadTablesAndViews({
-        preserve: this.selectedListItem(),
-        deleted: {relationType: event.type, name: event.name}
-      });
+      this.loadTablesAndViews();
       this.notificationService.info(`${getRelationTypeName(event.type)} "${event.name}" wurde gelöscht.`);
     });
   }
-
 
   protected onSort(sort: Sort): void {
     if (!sort.direction) {
@@ -160,14 +152,29 @@ export class AppComponent implements OnInit {
     this.loadRows();
   }
 
-  private loadTablesAndViews(options: LoadSelectionOptions = {}): void {
+  /** Reload tables and views. Keep the current selection if it still exists. If a pendingSelect is set (from CREATE), prefer that. */
+  private loadTablesAndViews(): void {
+    const previous = this.selectedListItem();
+
     forkJoin([this.apiService.loadTables(), this.apiService.loadViews()]).subscribe({
       next: ([tablesResponse, viewsResponse]) => {
         this.tableItems.set(this.toListItems(tablesResponse.items, RelationType.Table));
         this.viewItems.set(this.toListItems(viewsResponse.items, RelationType.View));
         this.loadedTablesAndViews.set(true);
 
-        const listItem = this.resolveSelectedListItem(options);
+        let listItem: ListItemModel | null = null;
+
+        // Prefer explicit selection set by a CREATE event
+        if (this.pendingSelect) {
+          const type = this.pendingSelect.relationType === RelationType.View ? RelationType.View : RelationType.Table;
+          listItem = this.findInLists(type, this.pendingSelect.name);
+          this.pendingSelect = null;
+        }
+        // Otherwise, try to keep whatever was selected before
+        else if (previous) {
+          listItem = this.findInLists(previous.relationType, previous.id);
+        }
+
         if (listItem) {
           this.updateSelectedListItem(listItem);
         } else {
@@ -178,33 +185,10 @@ export class AppComponent implements OnInit {
     });
   }
 
-  private resolveSelectedListItem(options: LoadSelectionOptions): ListItemModel | null {
-    // explicit select by type+name (e.g., on create)
-    if (options.select) {
-      const type = options.select.relationType === RelationType.View ? RelationType.View : RelationType.Table;
-      return this.findInLists(type, options.select.name);
-    }
-
-    // preserve previous (e.g., on delete)
-    if (options.preserve) {
-      const delType = options.deleted?.relationType === RelationType.View ? RelationType.View : RelationType.Table;
-      const wasDeleted =
-        !!options.deleted &&
-        options.preserve.relationType === delType &&
-        options.preserve.id === options.deleted.name;
-
-      return wasDeleted ? null : this.findInLists(options.preserve.relationType, options.preserve.id);
-    }
-
-    return null;
-  }
-
-
   private findInLists(type: RelationType, id: string): ListItemModel | null {
     const pool = type === RelationType.Table ? this.tableItems() : this.viewItems();
     return pool.find(i => i.id === id) ?? null;
   }
-
 
   private clearSelectedListItem(): void {
     this.selectedListItem.set(null);
