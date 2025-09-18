@@ -97,11 +97,11 @@ export class AppComponent implements OnInit {
     this.loadTablesAndViews();
   }
 
-  protected onSelectListItem(item: ListItemModel): void {
-    this.updateSelectedListItem(item);
+  protected onSelectionChange(item: ListItemModel): void {
+    this.selectListItem(item);
   }
 
-  private updateSelectedListItem(item: ListItemModel): void {
+  private selectListItem(item: ListItemModel): void {
     this.selectedListItem.set(item);
     this.pageIndex.set(0);
     this.sortBy.set(null);
@@ -128,7 +128,7 @@ export class AppComponent implements OnInit {
 
     // CREATE → after reload, select the created object
     this.signalRService.onCreateRelation$.subscribe((event: CreateRelationEvent) => {
-      this.pendingSelect = { relationType: event.type, name: event.name };
+      this.pendingSelect = {relationType: event.type, name: event.name};
       this.loadTablesAndViews();
       this.notificationService.info(`${getRelationTypeName(event.type)} "${event.name}" wurde erstellt.`);
     });
@@ -154,7 +154,7 @@ export class AppComponent implements OnInit {
 
   /** Reload tables and views. Keep the current selection if it still exists. If a pendingSelect is set (from CREATE), prefer that. */
   private loadTablesAndViews(): void {
-    const previous = this.selectedListItem();
+    const selectedListItem = this.selectedListItem();
 
     forkJoin([this.apiService.loadTables(), this.apiService.loadViews()]).subscribe({
       next: ([tablesResponse, viewsResponse]) => {
@@ -171,12 +171,12 @@ export class AppComponent implements OnInit {
           this.pendingSelect = null;
         }
         // Otherwise, try to keep whatever was selected before
-        else if (previous) {
-          listItem = this.findInLists(previous.relationType, previous.id);
+        else if (selectedListItem) {
+          listItem = this.findInLists(selectedListItem.relationType, selectedListItem.id);
         }
 
         if (listItem) {
-          this.updateSelectedListItem(listItem);
+          this.selectListItem(listItem);
         } else {
           this.clearSelectedListItem();
         }
