@@ -40,9 +40,7 @@ interface SelectTarget {
   name: string
 }
 
-interface ReloadSelectionOptions {
-  /** Mark as very first load (affects paging/sort reset and loaded flag). */
-  initial?: boolean;
+interface LoadSelectionOptions {
   /** Explicit item to select after reload (e.g., after a create). */
   select?: SelectTarget;
   /** Try to keep this previously selected item, unless it was deleted. */
@@ -100,13 +98,27 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     this.listenToSignalREvents();
-    this.reloadTablesAndViews({initial: true});
+    this.loadTablesAndViews();
   }
 
-  protected selectListItem(item: ListItemModel): void {
-    const selectedItem = this.selectedListItem();
-    if (selectedItem?.id === item.id && selectedItem?.relationType === item.relationType) return;
-    this.applySelection(item, false);
+  protected onSelectListItem(item: ListItemModel): void {
+    this.updateSelectedListItem(item);
+  }
+
+  private updateSelectedListItem(item: ListItemModel): void {
+    this.selectedListItem.set(item);
+    this.pageIndex.set(0);
+    this.sortBy.set(null);
+    this.sortDir.set('asc');
+
+    const sort = this.sort();
+    if (sort) {
+      sort.active = '';
+      sort.direction = '';
+    }
+
+    this.updateColumns();
+    this.loadRows();
   }
 
   protected onPage(pageEvent: PageEvent): void {
@@ -121,13 +133,13 @@ export class AppComponent implements OnInit {
 
     // CREATE → reload and select created object
     this.signalRService.onCreateRelation$.subscribe((event: CreateRelationEvent) => {
-      this.reloadTablesAndViews({select: {type: event.type, name: event.name}});
+      this.loadTablesAndViews({select: {type: event.type, name: event.name}});
       this.notificationService.info(`${getRelationTypeName(event.type)} "${event.name}" wurde erstellt.`);
     });
 
     // DELETE → reload; keep previous selection if it still exists; clear it if it was deleted
     this.signalRService.onDeleteRelation$.subscribe((event: DeleteRelationEvent): void => {
-      this.reloadTablesAndViews({preserve: this.selectedListItem(), deleted: {type: event.type, name: event.name}});
+      this.loadTablesAndViews({preserve: this.selectedListItem(), deleted: {type: event.type, name: event.name}});
       this.notificationService.info(`${getRelationTypeName(event.type)} "${event.name}" wurde gelöscht.`);
     });
   }
@@ -145,17 +157,17 @@ export class AppComponent implements OnInit {
     this.loadRows();
   }
 
-  private reloadTablesAndViews(options: ReloadSelectionOptions = {}): void {
+  private loadTablesAndViews(options: LoadSelectionOptions = {}): void {
     forkJoin([this.apiService.loadTables(), this.apiService.loadViews()]).subscribe({
       next: ([tablesResponse, viewsResponse]) => {
-        this.setRelations(tablesResponse, viewsResponse);
-        this.updateListAndSelectionAfterReload(this.resolveNextSelectedListItem(options), Boolean(options.initial));
+        this.update(tablesResponse.items, viewsResponse.items, options);
+        this.loadedTablesAndViews.set(true);
       },
       error: () => this.notificationService.error('Fehler beim Aktualisieren der Tabellen und Ansichten.'),
     });
   }
 
-  private resolveNextSelectedListItem(options: ReloadSelectionOptions): ListItemModel | null {
+  private resolveSelectedListItem(options: LoadSelectionOptions): ListItemModel | null {
     // explicit select by type+name (e.g., on create)
     if (options.select) {
       const type = options.select.type === 'view' ? RelationType.View : RelationType.Table;
@@ -173,31 +185,23 @@ export class AppComponent implements OnInit {
       return wasDeleted ? null : this.findInLists(options.preserve.relationType, options.preserve.id);
     }
 
-    // initial load: pick first table, else first view
-    if (options.initial) {
-      return this.tableItems()[0] ?? this.viewItems()[0] ?? null;
-    }
-
     return null;
   }
 
-  private updateListAndSelectionAfterReload(next: ListItemModel | null, initial: boolean): void {
-    if (next) {
-      // preserve paging/sort for runtime refreshes; reset only on very first load
-      this.applySelection(next, /*preservePagingAndSort*/ !initial);
+  private update(
+    tables: RelationApiModel[],
+    views: RelationApiModel[],
+    options: LoadSelectionOptions
+  ): void {
+    this.tableItems.set(this.toListItems(tables ?? [], RelationType.Table));
+    this.viewItems.set(this.toListItems(views ?? [], RelationType.View));
+
+    const listItem = this.resolveSelectedListItem(options);
+    if (listItem) {
+      this.updateSelectedListItem(listItem);
     } else {
       this.clearSelectionAndView();
     }
-    if (initial) this.loadedTablesAndViews.set(true);
-  }
-
-
-  private setRelations(
-    tablesRes: PagedResultApiModel<RelationApiModel>,
-    viewsRes: PagedResultApiModel<RelationApiModel>,
-  ): void {
-    this.tableItems.set(this.toListItems(tablesRes?.items ?? [], RelationType.Table));
-    this.viewItems.set(this.toListItems(viewsRes?.items ?? [], RelationType.View));
   }
 
   private findInLists(type: RelationType, id: string): ListItemModel | null {
@@ -205,24 +209,6 @@ export class AppComponent implements OnInit {
     return pool.find(i => i.id === id) ?? null;
   }
 
-  private applySelection(item: ListItemModel, preservePagingAndSort: boolean): void {
-    this.selectedListItem.set(item);
-
-    if (!preservePagingAndSort) {
-      this.pageIndex.set(0);
-      this.sortBy.set(null);
-      this.sortDir.set('asc');
-
-      const sort = this.sort();
-      if (sort) {
-        sort.active = '';
-        sort.direction = '';
-      }
-    }
-
-    this.updateColumns();
-    this.loadRows();
-  }
 
   private clearSelectionAndView(): void {
     this.selectedListItem.set(null);

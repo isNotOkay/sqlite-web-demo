@@ -7,7 +7,7 @@
           emptyText="Keine Tabellen gefunden"
           [items]="tableItems()"
           [selected]="selectedListItem()"
-          (selectionChange)="selectListItem($event)"
+          (selectionChange)="onSelectListItem($event)"
         >
         </app-nav-section>
 
@@ -18,7 +18,7 @@
           emptyText="Keine Ansichten gefunden"
           [items]="viewItems()"
           [selected]="selectedListItem()"
-          (selectionChange)="selectListItem($event)"
+          (selectionChange)="onSelectListItem($event)"
         >
         </app-nav-section>
       }
