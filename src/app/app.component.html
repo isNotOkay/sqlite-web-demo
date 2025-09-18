@@ -46,7 +46,11 @@
               <th mat-header-cell *matHeaderCellDef [mat-sort-header]="columnName">
                 {{ columnName }}
               </th>
-              <td mat-cell *matCellDef="let row" [class.numeric]="isNumber(row[columnName])">
+              <td
+                mat-cell
+                *matCellDef="let row"
+                [class.numeric]="row[columnName] | isNumber"
+              >
                 {{ row[columnName] }}
               </td>
             </ng-container>
