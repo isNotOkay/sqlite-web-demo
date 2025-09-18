@@ -36,7 +36,7 @@ import {IsNumberPipe} from './pipes/is-numper.pipe';
 import {getRelationTypeName} from './utils/sql.util';
 
 interface SelectTarget {
-  type: 'table' | 'view';
+  type: RelationType;
   name: string
 }
 
