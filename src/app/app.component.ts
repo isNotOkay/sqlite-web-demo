@@ -178,13 +178,13 @@ export class AppComponent implements OnInit {
   private resolveSelectedListItem(options: LoadSelectionOptions): ListItemModel | null {
     // explicit select by type+name (e.g., on create)
     if (options.select) {
-      const type = options.select.relationType === 'view' ? RelationType.View : RelationType.Table;
+      const type = options.select.relationType === RelationType.View ? RelationType.View : RelationType.Table;
       return this.findInLists(type, options.select.name);
     }
 
     // preserve previous (e.g., on delete)
     if (options.preserve) {
-      const delType = options.deleted?.relationType === 'view' ? RelationType.View : RelationType.Table;
+      const delType = options.deleted?.relationType === RelationType.View ? RelationType.View : RelationType.Table;
       const wasDeleted =
         !!options.deleted &&
         options.preserve.relationType === delType &&
