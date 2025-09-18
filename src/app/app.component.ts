@@ -176,8 +176,8 @@ export class AppComponent implements OnInit {
   }
 
   private findInLists(type: RelationType, id: string): ListItemModel | null {
-    const pool = type === RelationType.Table ? this.tableItems() : this.viewItems();
-    return pool.find(i => i.id === id) ?? null;
+    const listItems = type === RelationType.Table ? this.tableItems() : this.viewItems();
+    return listItems.find(item => item.id === id) ?? null;
   }
 
   private clearSelectedListItem(): void {
