@@ -89,9 +89,6 @@ export class AppComponent implements OnInit {
 
   private loadRowsSubscription?: Subscription;
 
-  /** When a CREATE event arrives, we stash the desired selection here until the next reload completes. */
-  private pendingSelectTarget: SelectTarget | null = null;
-
   ngOnInit(): void {
     this.listenToSignalREvents();
     this.loadTablesAndViews();
@@ -128,8 +125,7 @@ export class AppComponent implements OnInit {
 
     // CREATE → after reload, select the created object
     this.signalRService.onCreateRelation$.subscribe((event: CreateRelationEvent) => {
-      this.pendingSelectTarget = {relationType: event.type, name: event.name};
-      this.loadTablesAndViews();
+      this.loadTablesAndViews({ relationType: event.type, name: event.name });
       this.notificationService.info(`${getRelationTypeName(event.type)} "${event.name}" wurde erstellt.`);
     });
 
@@ -152,9 +148,13 @@ export class AppComponent implements OnInit {
     this.loadRows();
   }
 
-  /** Reload tables and views. Keep the current selection if it still exists. If a pendingSelect is set (from CREATE), prefer that. */
-  private loadTablesAndViews(): void {
-    const selectedListItem = this.selectedListItem();
+  /**
+   * Reload tables and views.
+   * If a SelectTarget is provided (e.g. after CREATE), prefer selecting that.
+   * Otherwise, keep the current selection if it still exists; if not, clear.
+   */
+  private loadTablesAndViews(selectTarget?: SelectTarget): void {
+    const current = this.selectedListItem();
 
     forkJoin([this.apiService.loadTables(), this.apiService.loadViews()]).subscribe({
       next: ([tablesResponse, viewsResponse]) => {
@@ -164,15 +164,14 @@ export class AppComponent implements OnInit {
 
         let listItem: ListItemModel | null = null;
 
-        // Prefer explicit selection set by a CREATE event
-        if (this.pendingSelectTarget) {
-          const type = this.pendingSelectTarget.relationType === RelationType.View ? RelationType.View : RelationType.Table;
-          listItem = this.findInLists(type, this.pendingSelectTarget.name);
-          this.pendingSelectTarget = null;
+        // Prefer explicit selection (e.g., just created)
+        if (selectTarget) {
+          const type = selectTarget.relationType === RelationType.View ? RelationType.View : RelationType.Table;
+          listItem = this.findInLists(type, selectTarget.name);
         }
-        // Otherwise, try to keep whatever was selected before
-        else if (selectedListItem) {
-          listItem = this.findInLists(selectedListItem.relationType, selectedListItem.id);
+        // Otherwise, try to re-select the previously selected item
+        else if (current) {
+          listItem = this.findInLists(current.relationType, current.id);
         }
 
         if (listItem) {
