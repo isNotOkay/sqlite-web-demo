@@ -90,7 +90,7 @@ export class AppComponent implements OnInit {
   private loadRowsSubscription?: Subscription;
 
   /** When a CREATE event arrives, we stash the desired selection here until the next reload completes. */
-  private pendingSelect: SelectTarget | null = null;
+  private pendingSelectTarget: SelectTarget | null = null;
 
   ngOnInit(): void {
     this.listenToSignalREvents();
@@ -128,7 +128,7 @@ export class AppComponent implements OnInit {
 
     // CREATE → after reload, select the created object
     this.signalRService.onCreateRelation$.subscribe((event: CreateRelationEvent) => {
-      this.pendingSelect = {relationType: event.type, name: event.name};
+      this.pendingSelectTarget = {relationType: event.type, name: event.name};
       this.loadTablesAndViews();
       this.notificationService.info(`${getRelationTypeName(event.type)} "${event.name}" wurde erstellt.`);
     });
@@ -165,10 +165,10 @@ export class AppComponent implements OnInit {
         let listItem: ListItemModel | null = null;
 
         // Prefer explicit selection set by a CREATE event
-        if (this.pendingSelect) {
-          const type = this.pendingSelect.relationType === RelationType.View ? RelationType.View : RelationType.Table;
-          listItem = this.findInLists(type, this.pendingSelect.name);
-          this.pendingSelect = null;
+        if (this.pendingSelectTarget) {
+          const type = this.pendingSelectTarget.relationType === RelationType.View ? RelationType.View : RelationType.Table;
+          listItem = this.findInLists(type, this.pendingSelectTarget.name);
+          this.pendingSelectTarget = null;
         }
         // Otherwise, try to keep whatever was selected before
         else if (selectedListItem) {
