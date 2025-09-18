@@ -18,7 +18,7 @@ import {MatPaginator, PageEvent} from '@angular/material/paginator';
 import {MatDivider} from '@angular/material/divider';
 import {MatSort, MatSortHeader, Sort} from '@angular/material/sort';
 
-import {finalize, forkJoin, Observable, Subscription} from 'rxjs';
+import {finalize, forkJoin, Subscription} from 'rxjs';
 
 import {ApiService} from './services/api.service';
 import {LoadingIndicator} from './components/loading-indicator/loading-indicator';
@@ -134,47 +134,46 @@ export class AppComponent implements OnInit {
     this.loadRows();
   }
 
-  private reloadTablesAndViews(opts: {
+  private reloadTablesAndViews(options: {
     initial?: boolean;
     select?: SelectTarget;
     preserve?: ListItemModel | null;
     deleted?: SelectTarget;
   } = {}): void {
-    this.loadTablesAndViews().subscribe({
-      next: ([tablesRes, viewsRes]) => {
-        this.setRelations(tablesRes, viewsRes);
-        const listItem = this.getNextSelectedListItem(opts);
-        this.updateListAndSelectionAfterReload(listItem, Boolean(opts.initial));
+    forkJoin([this.apiService.loadTables(), this.apiService.loadViews()]).subscribe({
+      next: ([tablesResponse, viewsResponse]) => {
+        this.setRelations(tablesResponse, viewsResponse);
+        this.updateListAndSelectionAfterReload(this.resolveNextSelectedListItem(options), Boolean(options.initial));
       },
       error: () => this.notificationService.showError('Fehler beim Aktualisieren der Tabellen und Ansichten.'),
     });
   }
 
-  private getNextSelectedListItem(opts: {
+  private resolveNextSelectedListItem(options: {
     initial?: boolean;
     select?: SelectTarget;
     preserve?: ListItemModel | null;
     deleted?: SelectTarget;
   }): ListItemModel | null {
     // explicit select by type+name (e.g., on create)
-    if (opts.select) {
-      const type = opts.select.type === 'view' ? RelationType.View : RelationType.Table;
-      return this.findInLists(type, opts.select.name);
+    if (options.select) {
+      const type = options.select.type === 'view' ? RelationType.View : RelationType.Table;
+      return this.findInLists(type, options.select.name);
     }
 
     // preserve previous (e.g., on delete)
-    if (opts.preserve) {
-      const delType = opts.deleted?.type === 'view' ? RelationType.View : RelationType.Table;
+    if (options.preserve) {
+      const delType = options.deleted?.type === 'view' ? RelationType.View : RelationType.Table;
       const wasDeleted =
-        !!opts.deleted &&
-        opts.preserve.relationType === delType &&
-        opts.preserve.id === opts.deleted.name;
+        !!options.deleted &&
+        options.preserve.relationType === delType &&
+        options.preserve.id === options.deleted.name;
 
-      return wasDeleted ? null : this.findInLists(opts.preserve.relationType, opts.preserve.id);
+      return wasDeleted ? null : this.findInLists(options.preserve.relationType, options.preserve.id);
     }
 
     // initial load: pick first table, else first view
-    if (opts.initial) {
+    if (options.initial) {
       return this.tableItems()[0] ?? this.viewItems()[0] ?? null;
     }
 
@@ -191,10 +190,6 @@ export class AppComponent implements OnInit {
     if (initial) this.loadedTablesAndViews.set(true);
   }
 
-
-  private loadTablesAndViews(): Observable<[PagedResultApiModel<RelationApiModel>, PagedResultApiModel<RelationApiModel>]> {
-    return forkJoin([this.apiService.loadTables(), this.apiService.loadViews()]);
-  }
 
   private setRelations(
     tablesRes: PagedResultApiModel<RelationApiModel>,
