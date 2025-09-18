@@ -87,25 +87,8 @@ export class AppComponent implements OnInit {
   private loadRowsSubscription?: Subscription;
 
   ngOnInit(): void {
-    this.signalR.start();
     this.listenToSignalREvents();
     this.reloadTablesAndViews({initial: true});
-  }
-
-  private listenToSignalREvents(): void {
-    // CREATE → reload and select created object
-    this.signalR.onCreateRelation$.subscribe((evt: CreateRelationEvent) => {
-      const noun = evt.type === 'view' ? 'Ansicht' : 'Tabelle';
-      this.reloadTablesAndViews({select: {type: evt.type, name: evt.name}});
-      this.toast.show(`${noun} "${evt.name}" wurde erstellt.`);
-    });
-
-    // DELETE → reload; keep previous selection if it still exists; clear it if it was deleted
-    this.signalR.onDeleteRelation$.subscribe((evt: DeleteRelationEvent): void => {
-      const noun = evt.type === 'view' ? 'Ansicht' : 'Tabelle';
-      this.reloadTablesAndViews({preserve: this.selectedListItem(), deleted: {type: evt.type, name: evt.name}});
-      this.toast.show(`${noun} "${evt.name}" wurde gelöscht.`);
-    });
   }
 
   protected selectListItem(item: ListItemModel): void {
@@ -119,6 +102,26 @@ export class AppComponent implements OnInit {
     this.pageSize.set(pageEvent.pageSize);
     this.loadRows();
   }
+
+
+  private listenToSignalREvents(): void {
+    this.signalR.start();
+
+    // CREATE → reload and select created object
+    this.signalR.onCreateRelation$.subscribe((event: CreateRelationEvent) => {
+      const relationTypeName = getRelationTypeName(event.type);
+      this.reloadTablesAndViews({select: {type: event.type, name: event.name}});
+      this.toast.show(`${relationTypeName} "${event.name}" wurde erstellt.`);
+    });
+
+    // DELETE → reload; keep previous selection if it still exists; clear it if it was deleted
+    this.signalR.onDeleteRelation$.subscribe((event: DeleteRelationEvent): void => {
+      const relationTypeName = getRelationTypeName(event.type);
+      this.reloadTablesAndViews({preserve: this.selectedListItem(), deleted: {type: event.type, name: event.name}});
+      this.toast.show(`${relationTypeName} "${event.name}" wurde gelöscht.`);
+    });
+  }
+
 
   protected onSort(sort: Sort): void {
     if (!sort.direction) {
