@@ -36,7 +36,7 @@ import {IsNumberPipe} from './pipes/is-numper.pipe';
 import {getRelationTypeName} from './utils/sql.util';
 
 interface SelectTarget {
-  type: RelationType;
+  relationType: RelationType;
   name: string
 }
 
@@ -133,13 +133,13 @@ export class AppComponent implements OnInit {
 
     // CREATE → reload and select created object
     this.signalRService.onCreateRelation$.subscribe((event: CreateRelationEvent) => {
-      this.loadTablesAndViews({select: {type: event.type, name: event.name}});
+      this.loadTablesAndViews({select: {relationType: event.type, name: event.name}});
       this.notificationService.info(`${getRelationTypeName(event.type)} "${event.name}" wurde erstellt.`);
     });
 
     // DELETE → reload; keep previous selection if it still exists; clear it if it was deleted
     this.signalRService.onDeleteRelation$.subscribe((event: DeleteRelationEvent): void => {
-      this.loadTablesAndViews({preserve: this.selectedListItem(), deleted: {type: event.type, name: event.name}});
+      this.loadTablesAndViews({preserve: this.selectedListItem(), deleted: {relationType: event.type, name: event.name}});
       this.notificationService.info(`${getRelationTypeName(event.type)} "${event.name}" wurde gelöscht.`);
     });
   }
@@ -178,13 +178,13 @@ export class AppComponent implements OnInit {
   private resolveSelectedListItem(options: LoadSelectionOptions): ListItemModel | null {
     // explicit select by type+name (e.g., on create)
     if (options.select) {
-      const type = options.select.type === 'view' ? RelationType.View : RelationType.Table;
+      const type = options.select.relationType === 'view' ? RelationType.View : RelationType.Table;
       return this.findInLists(type, options.select.name);
     }
 
     // preserve previous (e.g., on delete)
     if (options.preserve) {
-      const delType = options.deleted?.type === 'view' ? RelationType.View : RelationType.Table;
+      const delType = options.deleted?.relationType === 'view' ? RelationType.View : RelationType.Table;
       const wasDeleted =
         !!options.deleted &&
         options.preserve.relationType === delType &&
