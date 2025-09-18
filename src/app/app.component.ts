@@ -160,8 +160,16 @@ export class AppComponent implements OnInit {
   private loadTablesAndViews(options: LoadSelectionOptions = {}): void {
     forkJoin([this.apiService.loadTables(), this.apiService.loadViews()]).subscribe({
       next: ([tablesResponse, viewsResponse]) => {
-        this.update(tablesResponse.items, viewsResponse.items, options);
+        this.tableItems.set(this.toListItems(tablesResponse.items, RelationType.Table));
+        this.viewItems.set(this.toListItems(viewsResponse.items, RelationType.View));
         this.loadedTablesAndViews.set(true);
+
+        const listItem = this.resolveSelectedListItem(options);
+        if (listItem) {
+          this.updateSelectedListItem(listItem);
+        } else {
+          this.clearSelectionAndView();
+        }
       },
       error: () => this.notificationService.error('Fehler beim Aktualisieren der Tabellen und Ansichten.'),
     });
@@ -188,21 +196,6 @@ export class AppComponent implements OnInit {
     return null;
   }
 
-  private update(
-    tables: RelationApiModel[],
-    views: RelationApiModel[],
-    options: LoadSelectionOptions
-  ): void {
-    this.tableItems.set(this.toListItems(tables ?? [], RelationType.Table));
-    this.viewItems.set(this.toListItems(views ?? [], RelationType.View));
-
-    const listItem = this.resolveSelectedListItem(options);
-    if (listItem) {
-      this.updateSelectedListItem(listItem);
-    } else {
-      this.clearSelectionAndView();
-    }
-  }
 
   private findInLists(type: RelationType, id: string): ListItemModel | null {
     const pool = type === RelationType.Table ? this.tableItems() : this.viewItems();
