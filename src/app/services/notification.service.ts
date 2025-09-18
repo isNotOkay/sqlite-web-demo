@@ -5,11 +5,15 @@ import {MatSnackBar} from '@angular/material/snack-bar';
 export class NotificationService {
   private snackBar = inject(MatSnackBar);
 
-  show(message: string, action = 'Schließen', duration = 6000): void {
-    this.snackBar.open(message, action, {duration, verticalPosition: 'top', horizontalPosition: 'right'});
+  info(message: string): void {
+    this.show(message);
   }
 
-  showError(message: string): void {
-    this.show(message, 'Schließen', 6000);
+  error(message: string): void {
+    this.show(message);
+  }
+
+  private show(message: string, duration = 6000): void {
+    this.snackBar.open(message, undefined, {duration, verticalPosition: 'top', horizontalPosition: 'right'});
   }
 }

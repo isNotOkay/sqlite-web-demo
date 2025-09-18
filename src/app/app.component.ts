@@ -111,13 +111,13 @@ export class AppComponent implements OnInit {
     // CREATE → reload and select created object
     this.signalRService.onCreateRelation$.subscribe((event: CreateRelationEvent) => {
       this.reloadTablesAndViews({select: {type: event.type, name: event.name}});
-      this.notificationService.show(`${getRelationTypeName(event.type)} "${event.name}" wurde erstellt.`);
+      this.notificationService.info(`${getRelationTypeName(event.type)} "${event.name}" wurde erstellt.`);
     });
 
     // DELETE → reload; keep previous selection if it still exists; clear it if it was deleted
     this.signalRService.onDeleteRelation$.subscribe((event: DeleteRelationEvent): void => {
       this.reloadTablesAndViews({preserve: this.selectedListItem(), deleted: {type: event.type, name: event.name}});
-      this.notificationService.show(`${getRelationTypeName(event.type)} "${event.name}" wurde gelöscht.`);
+      this.notificationService.info(`${getRelationTypeName(event.type)} "${event.name}" wurde gelöscht.`);
     });
   }
 
@@ -145,7 +145,7 @@ export class AppComponent implements OnInit {
         this.setRelations(tablesResponse, viewsResponse);
         this.updateListAndSelectionAfterReload(this.resolveNextSelectedListItem(options), Boolean(options.initial));
       },
-      error: () => this.notificationService.showError('Fehler beim Aktualisieren der Tabellen und Ansichten.'),
+      error: () => this.notificationService.error('Fehler beim Aktualisieren der Tabellen und Ansichten.'),
     });
   }
 
@@ -270,7 +270,7 @@ export class AppComponent implements OnInit {
         error: () => {
           this.rows.set([]);
           this.totalCount.set(0);
-          this.notificationService.showError('Fehler beim Laden der Daten.');
+          this.notificationService.error('Fehler beim Laden der Daten.');
         },
       });
   }
