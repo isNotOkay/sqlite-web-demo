@@ -96,19 +96,19 @@ export class AppComponent implements OnInit {
     // CREATE → reload and select created object
     this.signalR.onCreateRelation$.subscribe((evt: CreateRelationEvent) => {
       const noun = evt.type === 'view' ? 'Ansicht' : 'Tabelle';
-      this.reloadRelations({select: {type: evt.type, name: evt.name}});
+      this.reloadTablesAndViews({select: {type: evt.type, name: evt.name}});
       this.toast.show(`${noun} "${evt.name}" wurde erstellt.`);
     });
 
     // DELETE → reload; keep previous selection if it still exists; clear it if it was deleted
     this.signalR.onDeleteRelation$.subscribe((evt: DeleteRelationEvent) => {
       const noun = evt.type === 'view' ? 'Ansicht' : 'Tabelle';
-      this.reloadRelations({preserve: this.selectedListItem(), deleted: {type: evt.type, name: evt.name}});
+      this.reloadTablesAndViews({preserve: this.selectedListItem(), deleted: {type: evt.type, name: evt.name}});
       this.toast.show(`${noun} "${evt.name}" wurde gelöscht.`);
     });
 
     // Initial load
-    this.reloadRelations({initial: true});
+    this.reloadTablesAndViews({initial: true});
   }
 
   protected selectListItem(item: ListItemModel): void {
@@ -139,31 +139,24 @@ export class AppComponent implements OnInit {
     return _.isNumber(value);
   }
 
-  /**
-   * Reload tables & views.
-   * Strategies:
-   *  - { initial: true }               → pick vw_holidays if present, else first item
-   *  - { select: {type,name} }         → select a specific object
-   *  - { preserve, deleted? }          → keep previous if it still exists, else clear
-   */
-  private reloadRelations(opts: {
+
+  private reloadTablesAndViews(opts: {
     initial?: boolean;
     select?: SelectTarget;
     preserve?: ListItemModel | null;
     deleted?: SelectTarget;
   } = {}): void {
-    this.fetchRelations().subscribe({
+    this.loadTablesAndViews().subscribe({
       next: ([tablesRes, viewsRes]) => {
         this.setRelations(tablesRes, viewsRes);
-        const next = this.resolveNextSelection(opts);
-        this.applyAfterReload(next, !!opts.initial);
+        const listItem = this.getNextSelectedListItem(opts);
+        this.updateListAndSelectionAfterReload(listItem, Boolean(opts.initial));
       },
       error: () => this.toast.showError('Fehler beim Aktualisieren der Tabellen und Ansichten.'),
     });
   }
 
-  /** Decide what should be selected after a reload */
-  private resolveNextSelection(opts: {
+  private getNextSelectedListItem(opts: {
     initial?: boolean;
     select?: SelectTarget;
     preserve?: ListItemModel | null;
@@ -194,8 +187,7 @@ export class AppComponent implements OnInit {
     return null;
   }
 
-  /** Apply result of selection decision and finish UI state updates */
-  private applyAfterReload(next: ListItemModel | null, initial: boolean): void {
+  private updateListAndSelectionAfterReload(next: ListItemModel | null, initial: boolean): void {
     if (next) {
       // preserve paging/sort for runtime refreshes; reset only on very first load
       this.applySelection(next, /*preservePagingAndSort*/ !initial);
@@ -207,7 +199,7 @@ export class AppComponent implements OnInit {
 
 
   /** Fetch tables & views in parallel */
-  private fetchRelations(): Observable<[PagedResultApiModel<RelationApiModel>, PagedResultApiModel<RelationApiModel>]> {
+  private loadTablesAndViews(): Observable<[PagedResultApiModel<RelationApiModel>, PagedResultApiModel<RelationApiModel>]> {
     return forkJoin([this.dataApiService.loadTables(), this.dataApiService.loadViews()]);
   }
 
