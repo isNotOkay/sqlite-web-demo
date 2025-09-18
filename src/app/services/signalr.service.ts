@@ -4,12 +4,12 @@ import {Observable, Subject} from 'rxjs';
 import {RelationType} from '../enums/relation-type.enum';
 
 export interface CreateRelationEvent {
-  type: RelationType;
+  relationType: RelationType;
   name: string;
 }
 
 export interface DeleteRelationEvent {
-  type: RelationType;
+  relationType: RelationType;
   name: string;
 }
 
@@ -33,23 +33,28 @@ export class SignalRService {
       .withAutomaticReconnect()
       .build();
 
-    // 🔔 create
     this.hub.on('CreateRelation', (payload: any) => {
-      const type = (payload?.type ?? '').toString().toLowerCase() as RelationType;
+      const relationType = (payload?.relationType ?? payload?.type ?? '')
+        .toString()
+        .toLowerCase() as RelationType;
       const name = (payload?.name ?? '').toString();
-      if ((type === 'table' || type === 'view') && name) {
-        this.createRelationSubject.next({type, name});
+
+      if ((relationType === 'table' || relationType === 'view') && name) {
+        this.createRelationSubject.next({ relationType, name });
       }
     });
 
-    // 🔔 delete
     this.hub.on('DeleteRelation', (payload: any) => {
-      const type = (payload?.type ?? '').toString().toLowerCase() as RelationType;
+      const relationType = (payload?.relationType ?? payload?.type ?? '')
+        .toString()
+        .toLowerCase() as RelationType;
       const name = (payload?.name ?? '').toString();
-      if ((type === 'table' || type === 'view') && name) {
-        this.deleteRelationSubject.next({type, name});
+
+      if ((relationType === 'table' || relationType === 'view') && name) {
+        this.deleteRelationSubject.next({ relationType, name });
       }
     });
+
 
     this.hub.start().catch(err => console.error('SignalR start error', err));
   }

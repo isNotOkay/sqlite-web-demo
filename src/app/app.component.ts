@@ -123,14 +123,14 @@ export class AppComponent implements OnInit {
 
     // CREATE → after reload, select the created object
     this.signalRService.onCreateRelation$.subscribe((event: CreateRelationEvent) => {
-      this.loadTablesAndViews({relationType: event.type, name: event.name});
-      this.notificationService.info(`${getRelationTypeName(event.type)} "${event.name}" wurde erstellt.`);
+      this.loadTablesAndViews({relationType: event.relationType, name: event.name});
+      this.notificationService.info(`${getRelationTypeName(event.relationType)} "${event.name}" wurde erstellt.`);
     });
 
     // DELETE → just reload; if the currently selected item still exists it stays, otherwise the page clears
     this.signalRService.onDeleteRelation$.subscribe((event: DeleteRelationEvent): void => {
       this.loadTablesAndViews();
-      this.notificationService.info(`${getRelationTypeName(event.type)} "${event.name}" wurde gelöscht.`);
+      this.notificationService.info(`${getRelationTypeName(event.relationType)} "${event.name}" wurde gelöscht.`);
     });
   }
 
